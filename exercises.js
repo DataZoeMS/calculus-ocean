@@ -229,7 +229,7 @@ const generators = {
     };
   },
   definite(random, gentle = false) {
-    const a = gentle ? 1 : integer(random, 1, 5), n = gentle ? 0 : integer(random, 1, 4), b = gentle ? 1 : integer(random, 1, 3);
+    const a = gentle ? 1 : integer(random, 1, 5), n = 1, b = gentle ? 1 : integer(random, 1, 3);
     const answer = F(a * b ** (n + 1), n + 1);
     return {
       family: "power-integral", parameters: { a, n, b }, prompt: "Evaluate the definite integral.",
@@ -239,7 +239,7 @@ const generators = {
     };
   },
   antiderivatives(random, gentle = false) {
-    const a = gentle ? 1 : integer(random, 2, 6), n = gentle ? 0 : integer(random, 2, 5);
+    const a = gentle ? 1 : integer(random, 2, 6), n = gentle ? 1 : integer(random, 2, 5);
     const candidate = (coefficient, exponent, constant, reason) => ({ text: `(${ft(coefficient)})${p("x", exponent)}${constant ? " + C" : ""}`, model: { coefficient, exponent, constant }, reason });
     return {
       family: "antiderivative", parameters: { a, n }, prompt: "Find the general antiderivative over the real numbers.",

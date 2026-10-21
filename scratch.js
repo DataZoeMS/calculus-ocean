@@ -62,7 +62,7 @@ export function createScratchPad() {
   function guide() {
     const kind = $("scratch-guide").value;
     guideLayer.replaceChildren();
-    if (kind === "grid" || kind === "axes") guideLayer.append(svgNode("rect", { width: WIDTH, height: HEIGHT, fill: "url(#scratch-grid)" }));
+    if (kind === "grid" || kind === "axes") guideLayer.append(svgNode("rect", { x: 0, y: -60, width: WIDTH, height: HEIGHT, fill: "url(#scratch-grid)" }));
     if (kind === "axes" || kind === "circle") {
       guideLayer.append(svgNode("path", { d: "M30 300 H930 M480 25 V575 M916 292 L930 300 L916 308 M472 39 L480 25 L488 39", class: "scratch-axis" }));
       guideLayer.append(svgNode("text", { x: 910, y: 335, class: "scratch-label" }, "x"), svgNode("text", { x: 497, y: 47, class: "scratch-label" }, "y"));
