@@ -1,4 +1,5 @@
 const NS = "http://www.w3.org/2000/svg";
+const WIDTH = 960, HEIGHT = 720;
 const stamps = { integral: "∫", double: "∫∫", triple: "∫∫∫", gradient: "∇", infinity: "∞", theta: "θ", vector: "→" };
 const clamp = (value, max) => Math.max(0, Math.min(max, value));
 
@@ -31,7 +32,7 @@ export function segmentDistance(a, b, c, d) {
 export function createScratchPad() {
   const $ = id => document.getElementById(id);
   const surface = $("scratch-pad"), inkLayer = $("scratch-ink-layer"), guideLayer = $("scratch-guide-layer");
-  let marks = [], history = [], active = null, mode = "pen", cursor = { x: 480, y: 300 }, keyboardStroke = null, selectedStamp = "integral";
+  let marks = [], history = [], active = null, mode = "pen", cursor = { x: WIDTH / 2, y: HEIGHT / 2 }, keyboardStroke = null, selectedStamp = "integral";
 
   const status = text => { $("scratch-status").textContent = text; };
   const remember = before => { history.push(before); if (history.length > 60) history.shift(); };
@@ -61,7 +62,7 @@ export function createScratchPad() {
   function guide() {
     const kind = $("scratch-guide").value;
     guideLayer.replaceChildren();
-    if (kind === "grid" || kind === "axes") guideLayer.append(svgNode("rect", { width: 960, height: 600, fill: "url(#scratch-grid)" }));
+    if (kind === "grid" || kind === "axes") guideLayer.append(svgNode("rect", { width: WIDTH, height: HEIGHT, fill: "url(#scratch-grid)" }));
     if (kind === "axes" || kind === "circle") {
       guideLayer.append(svgNode("path", { d: "M30 300 H930 M480 25 V575 M916 292 L930 300 L916 308 M472 39 L480 25 L488 39", class: "scratch-axis" }));
       guideLayer.append(svgNode("text", { x: 910, y: 335, class: "scratch-label" }, "x"), svgNode("text", { x: 497, y: 47, class: "scratch-label" }, "y"));
@@ -78,7 +79,7 @@ export function createScratchPad() {
   }
   function position(event) {
     const rect = surface.getBoundingClientRect();
-    return { x: clamp((event.clientX - rect.left) / rect.width * 960, 960), y: clamp((event.clientY - rect.top) / rect.height * 600, 600) };
+    return { x: clamp((event.clientX - rect.left) / rect.width * WIDTH, WIDTH), y: clamp((event.clientY - rect.top) / rect.height * HEIGHT, HEIGHT) };
   }
   function makeStroke(point) {
     return { type: "stroke", points: [point], ink: $("ink").value, width: Number($("pen-width").value) };
@@ -177,7 +178,7 @@ export function createScratchPad() {
     render(); status("Pad cleared · Undo restores it");
   });
   function renderCursor() {
-    $("scratch-cursor").setAttribute("transform", `translate(${cursor.x - 480} ${cursor.y - 300})`);
+    $("scratch-cursor").setAttribute("transform", `translate(${cursor.x - WIDTH / 2} ${cursor.y - HEIGHT / 2})`);
   }
   surface.addEventListener("focus", () => { $("scratch-cursor").hidden = false; $("scratch-cursor").removeAttribute("hidden"); renderCursor(); });
   surface.addEventListener("blur", () => { $("scratch-cursor").setAttribute("hidden", ""); endKeyboard(); });
@@ -188,7 +189,7 @@ export function createScratchPad() {
     if (active) return;
     if (delta) {
       const step = event.shiftKey ? 50 : 10;
-      cursor = { x: clamp(cursor.x + delta[0] * step, 960), y: clamp(cursor.y + delta[1] * step, 600) };
+      cursor = { x: clamp(cursor.x + delta[0] * step, WIDTH), y: clamp(cursor.y + delta[1] * step, HEIGHT) };
       if (keyboardStroke) { marks[marks.length - 1].points.push({ ...cursor }); render(); }
       renderCursor();
     } else if (event.key === " " && !event.repeat) {

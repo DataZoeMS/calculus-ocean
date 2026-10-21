@@ -24,7 +24,7 @@ function topicOptions() {
 function nextQuestion(moveFocus = false) {
   let next;
   for (let attempts = 0; attempts < 12; attempts++) {
-    next = generateProblem($("course").value, $("topic").value);
+    next = generateProblem($("course").value, $("topic").value, Math.random, $("problem-level").value);
     const signature = `${next.topic}:${next.expression}:${next.prompt}`;
     if (signature !== previousSignature) { previousSignature = signature; break; }
   }
@@ -35,7 +35,8 @@ function nextQuestion(moveFocus = false) {
   $("question-number").textContent = `Dive ${String(questionNumber).padStart(2, "0")}`;
   $("question-heading").textContent = problem.prompt;
   $("question-expression").textContent = problem.expression;
-  $("question-note").textContent = problem.note || "Choose one exact answer, then compare your reasoning with the worked steps.";
+  const note = problem.note || "Choose one exact answer, then compare your reasoning with the worked steps.";
+  $("question-note").textContent = $("course").value === "1" && $("problem-level").value === "gentle" ? `Gentle start · ${note}` : note;
   $("answers").replaceChildren();
   problem.choices.forEach((choice, index) => {
     const button = document.createElement("button");
@@ -149,9 +150,15 @@ try {
     document.documentElement.dataset.theme = matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
   }
   topicOptions();
+  $("problem-level").disabled = $("course").value !== "1";
   nextQuestion();
-  $("course").addEventListener("change", () => { topicOptions(); nextQuestion(); });
+  $("course").addEventListener("change", () => {
+    topicOptions();
+    $("problem-level").disabled = $("course").value !== "1";
+    nextQuestion();
+  });
   $("topic").addEventListener("change", () => nextQuestion());
+  $("problem-level").addEventListener("change", () => nextQuestion());
   $("next").addEventListener("click", () => nextQuestion(true));
   $("reveal").addEventListener("click", () => {
     if (solved) return;

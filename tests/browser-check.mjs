@@ -54,6 +54,7 @@ try {
   let renderedTopics = 0;
   for (const course of courses) {
     await page.locator("#course").selectOption(course);
+    assert.equal(await page.locator("#problem-level").isDisabled(), course !== "1");
     const topics = await page.locator("#topic option").evaluateAll(items => items.map(item => item.value).filter(value => value !== "mixed"));
     for (const topic of topics) {
       await page.locator("#topic").selectOption(topic);
@@ -72,6 +73,17 @@ try {
   }
   assert.equal(renderedTopics, 20);
   await page.locator("#course").selectOption("1");
+  await page.locator("#problem-level").selectOption("gentle");
+  const calcOneTopics = await page.locator("#topic option").evaluateAll(items => items.map(item => item.value).filter(value => value !== "mixed"));
+  for (const topic of calcOneTopics) {
+    await page.locator("#topic").selectOption(topic);
+    assert.match(await page.locator("#question-note").textContent(), /^Gentle start/);
+    assert.equal(await page.locator(".answer").count(), 4);
+    await page.locator(".answer").first().click();
+    assert.equal(await page.locator("#solution").getAttribute("open"), "");
+    assert.ok(await page.locator("#solution-steps li").count() >= 3);
+  }
+  await page.locator("#problem-level").selectOption("standard");
   await page.locator("#topic").selectOption("limits");
   // Use explicit answer text, rather than hoping a random selection exercises both feedback branches.
   let expression = await page.locator("#question-expression").textContent();
@@ -108,6 +120,7 @@ try {
   const pad = page.locator("#scratch-pad");
   await pad.scrollIntoViewIfNeeded();
   const box = await pad.boundingBox();
+  assert.ok(Math.abs(box.width / box.height - 4 / 3) < 0.05, "scratch pad has the larger 4:3 drawing surface");
   await page.mouse.move(box.x + box.width * 0.2, box.y + box.height * 0.35);
   await page.mouse.down();
   await page.mouse.move(box.x + box.width * 0.7, box.y + box.height * 0.6, { steps: 24 });

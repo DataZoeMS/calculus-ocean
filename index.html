@@ -97,6 +97,7 @@
     <section class="course-bar panel" aria-label="Practice settings">
       <div class="field"><label for="course">Your course</label><select id="course"><option value="1">Calculus I · Change & accumulation</option><option value="2">Calculus II · Techniques & infinite sums</option><option value="3">Calculus III · Space & multivariable change</option></select></div>
       <div class="field"><label for="topic">Practice focus</label><select id="topic"></select></div>
+      <div class="field"><label for="problem-level">Calc I problem level</label><select id="problem-level" aria-describedby="problem-level-note"><option value="standard">Standard practice</option><option value="gentle">Gentle start · easier</option></select><span id="problem-level-note" class="small">Available for Calculus I.</span></div>
       <div class="coverage-note"><span class="status-dot" aria-hidden="true"></span><span>Curated essentials<br><a href="#coverage">See the topics covered</a></span></div>
     </section>
     <div id="app-error" class="error-box" role="alert" hidden></div>
@@ -151,10 +152,10 @@
             <button id="stamp" type="button" aria-pressed="false">Place stamp</button>
           </div>
           <div id="scratch-pad" tabindex="0" role="group" aria-label="Drawing surface. Draw with finger, Pencil, or mouse. Keyboard: arrow keys move the cursor, Space starts or ends a line, Enter places the selected stamp, Escape cancels." aria-describedby="scratch-instructions">
-            <svg id="scratch-svg" viewBox="0 0 960 600" preserveAspectRatio="none" aria-hidden="true" focusable="false">
+            <svg id="scratch-svg" viewBox="0 0 960 720" preserveAspectRatio="none" aria-hidden="true" focusable="false">
               <defs><pattern id="scratch-grid" width="40" height="40" patternUnits="userSpaceOnUse"><path d="M40 0 H0 V40" class="scratch-grid-line"/></pattern></defs>
-              <g id="scratch-guide-layer"></g><g id="scratch-ink-layer"></g>
-              <g id="scratch-cursor" hidden><circle cx="480" cy="300" r="12"/><path d="M460 300 H500 M480 280 V320"/></g>
+              <g id="scratch-guide-layer" transform="scale(1 1.2)"></g><g id="scratch-ink-layer"></g>
+              <g id="scratch-cursor" hidden><circle cx="480" cy="360" r="12"/><path d="M460 360 H500 M480 340 V380"/></g>
             </svg>
             <span class="pad-hint">Your working goes here</span>
           </div>
@@ -198,6 +199,14 @@
     </div>
     <section id="field-guide" class="field-guide panel">
       <div><p class="eyebrow">A field guide for your next dive</p><h2>Practice deliberately, explore freely.</h2><p>Choose a course and a focus, or mix its topics. Try a question, sketch your reasoning, then compare the worked steps. Studying a solution does not count as an answered question. The timer is entirely yours to control.</p></div>
+      <details><summary>Calculus I cheat sheet</summary><div class="cheat-sheet">
+        <section><h3>Limits</h3><p>For a polynomial, substitute the value x approaches. If substitution gives 0/0, factor first, cancel the shared factor for x values nearby, then evaluate the simplified expression.</p></section>
+        <section><h3>Derivatives</h3><p>Power rule: d(xⁿ)/dx = nxⁿ⁻¹. Differentiate sums term by term; constants become 0. For a function inside another function, use the chain rule: differentiate the outside, keep the inside, then multiply by the inside’s derivative.</p></section>
+        <section><h3>Optimization</h3><p>Identify the quantity to maximize or minimize. Find critical points by solving f′(x) = 0, then use the context or the second derivative to decide which gives the desired extreme.</p></section>
+        <section><h3>Antiderivatives</h3><p>Reverse the power rule: increase the exponent by 1, divide by the new exponent, and add + C. For x⁻¹, use ln|x| + C.</p></section>
+        <section><h3>Definite integrals</h3><p>Find an antiderivative F, then evaluate F(b) − F(a). The result is signed accumulation: reversing the bounds reverses the sign.</p></section>
+        <p class="small">Quick process: name the topic → write the matching rule → apply it carefully → check signs, bounds, and constants.</p>
+      </div></details>
       <details id="coverage"><summary>What’s in this ocean?</summary><div id="coverage-list"></div><p class="small">A first-release collection of representative, parameterized exercises—not a complete syllabus or symbolic algebra system. No general limit engine, convergence test suite, arbitrary-region integration, surface integrals, or Stokes/divergence theorem problems. All choices are exact unless explicitly labeled otherwise. Reloading starts a fresh session.</p></details>
       <details><summary>Privacy, access & notation</summary><p>No accounts, analytics, external fonts, or third-party scripts. Practice, drawings, and scores stay in this page’s memory. Standard GitHub Pages hosting still receives normal web requests. Formulas use selectable Unicode text, superscripts, explicit bounds, and exp(x) for eˣ. Controls work with keyboard and touch. Light/dark modes follow your device initially; the theme button changes this visit’s appearance.</p></details>
     </section>

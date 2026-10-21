@@ -24,6 +24,7 @@ function checkMath(problem) {
       close(answer, ((a + 0.001) ** 2 - a ** 2) / 0.001, 0.001);
       assert.equal(answer, 2 * a);
       break;
+    case "direct-limit": assert.equal(answer, a * a); break;
     case "chain":
       for (const at of [-0.31, 0.25, 1.1]) close(answer.coefficient * (a * at + b) ** answer.exponent, derivative(t => (a * t + b) ** n, at));
       assert.equal(answer.exponent, n - 1); assert.equal(answer.coefficient, a * n);
@@ -142,10 +143,30 @@ test("All branches and all mixed-course topics are reachable; invalid selections
   assert.throws(() => generateProblem("1", "nonexistent"), RangeError);
 });
 
+test("Gentle-start Calculus I problems use simpler examples with valid worked answers", () => {
+  for (const [topic] of COURSES[0].topics) {
+    const expressions = new Set();
+    for (let seed = 0; seed < 100; seed++) {
+      const problem = generateProblem("1", topic, seededRandom(seed), "gentle");
+      assert.equal(problem.course, "1");
+      assert.equal(problem.topic, topic);
+      assert.equal(problem.choices.length, 4);
+      assert.equal(problem.choices.filter(choice => choice.correct).length, 1);
+      assert.ok(problem.rules.length > 0);
+      assert.ok(problem.steps.length >= 3);
+      checkMath(problem);
+      expressions.add(problem.expression);
+    }
+    assert.ok(expressions.size > 0);
+  }
+  assert.throws(() => generateProblem("1", "limits", Math.random, "advanced"), RangeError);
+});
+
 test("Every exercise family names its applicable rule, with important conditions retained", () => {
   const expected = {
     difference: "Difference of squares & limit laws",
     continuity: "Continuity at a point",
+    "direct-limit": "Direct substitution for polynomial limits",
     chain: "Chain rule",
     minimum: "Fermat’s theorem & the second-derivative test",
     "power-integral": "Fundamental Theorem of Calculus",
@@ -170,8 +191,8 @@ test("Every exercise family names its applicable rule, with important conditions
     curl: "Curl definition"
   };
   const seen = new Set(), statements = new Map();
-  for (const course of COURSES) for (const [topic] of course.topics) for (let seed = 0; seed < 100; seed++) {
-    const problem = generateProblem(course.id, topic, seededRandom(seed));
+  for (const course of COURSES) for (const [topic] of course.topics) for (const level of course.id === "1" ? ["standard", "gentle"] : ["standard"]) for (let seed = 0; seed < 100; seed++) {
+    const problem = generateProblem(course.id, topic, seededRandom(seed), level);
     assert.ok(problem.rules.some(rule => rule.name === expected[problem.family]), `Wrong rules for ${problem.family}`);
     seen.add(problem.family);
     for (const rule of problem.rules) statements.set(rule.name, rule.statement);

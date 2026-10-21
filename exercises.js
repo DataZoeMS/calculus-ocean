@@ -24,6 +24,10 @@ const RULES = {
     name: "Continuity at a point",
     statement: "A function is continuous at a when its finite limit as x → a equals its value at a. Polynomials are continuous, so their limits can be found by substitution. Fill a removable hole with that limit."
   },
+  "direct-limit": {
+    name: "Direct substitution for polynomial limits",
+    statement: "Polynomials are continuous everywhere, so evaluate a polynomial limit by substituting the value that x approaches."
+  },
   derivative: {
     name: "Power, sum & constant-multiple rules",
     statement: "For an integer n ≥ 1, d(xⁿ)/dx = nxⁿ⁻¹. Differentiate sums term by term and keep constant multipliers. The derivative of a constant is 0."
@@ -121,6 +125,7 @@ const RULES = {
 const SOLUTION_RULES = {
   difference: [RULES.factoring, RULES.continuity],
   continuity: [RULES.factoring, RULES.continuity],
+  "direct-limit": [RULES["direct-limit"]],
   chain: [RULES.derivative, RULES.chain],
   minimum: [RULES.derivative, RULES.minimum],
   "power-integral": [RULES.integral, RULES.fundamental],
@@ -174,7 +179,16 @@ function symbolic(correct, wrong) {
 }
 
 const generators = {
-  limits(random) {
+  limits(random, gentle = false) {
+    if (gentle) {
+      const a = integer(random, 1, 3);
+      return {
+        family: "direct-limit", parameters: { a }, prompt: "Evaluate the limit by direct substitution.",
+        expression: `lim as x → ${a} of x²`,
+        choices: numeric(a * a, [[2 * a, "Substitute into x² and evaluate the square."], [a, "The limit is the value of x², not x."], [a * a + 1, "Evaluate the polynomial at the approach value." ]]),
+        steps: [`x² is a polynomial, so it is continuous at x = ${a}.`, `Substitute x = ${a} directly into x².`, `The limit is ${a}² = ${a * a}.`]
+      };
+    }
     const a = integer(random, 1, 8);
     const variant = choose(random, ["difference", "continuity"]);
     return {
@@ -186,9 +200,9 @@ const generators = {
       steps: [`Factor x² − ${a * a} = (x − ${a})(x + ${a}).`, `For x ≠ ${a}, cancel x − ${a}; the expression becomes x + ${a}.`, `As x → ${a}, x + ${a} → ${2 * a}.${variant === "continuity" ? ` Set f(${a}) = ${2 * a} to fill the hole.` : ""}`]
     };
   },
-  derivatives(random) {
-    const a = integer(random, 2, 5), b = integer(random, 1, 5), n = integer(random, 2, 5);
-    const inner = `(${a}x + ${b})`;
+  derivatives(random, gentle = false) {
+    const a = gentle ? 1 : integer(random, 2, 5), b = gentle ? 0 : integer(random, 1, 5), n = gentle ? integer(random, 2, 3) : integer(random, 2, 5);
+    const inner = gentle ? "x" : `(${a}x + ${b})`;
     const candidate = (coefficient, exponent, reason) => ({ text: t(coefficient, p(inner, exponent)), model: { coefficient, exponent }, reason });
     return {
       family: "chain", parameters: { a, b, n }, prompt: "Find f′(x).", expression: `f(x) = ${p(inner, n)}`,
@@ -201,8 +215,8 @@ const generators = {
       steps: [`Let u = ${a}x + ${b}; then du/dx = ${a}.`, `d(u${p("", n)})/dx = ${n}${p("u", n - 1)} · du/dx.`, `f′(x) = ${t(a * n, p(inner, n - 1))}.`]
     };
   },
-  applications(random) {
-    const a = integer(random, 1, 4), h = integer(random, 1, 6), c = integer(random, 1, 9);
+  applications(random, gentle = false) {
+    const a = gentle ? 1 : integer(random, 1, 4), h = integer(random, 1, gentle ? 3 : 6), c = gentle ? h * h : integer(random, 1, 9);
     return {
       family: "minimum", parameters: { a, h, c }, prompt: "At which x does f attain its absolute minimum over all real numbers?",
       expression: `f(x) = ${t(a, "x²")} − ${2 * a * h}x + ${c}`,
@@ -210,8 +224,8 @@ const generators = {
       steps: [`f′(x) = ${2 * a}x − ${2 * a * h}.`, `Set f′(x) = 0: x = ${2 * a * h}/${2 * a} = ${h}.`, `f″(x) = ${2 * a} > 0, and the quadratic opens upward. This critical point is the unique absolute minimum.`]
     };
   },
-  definite(random) {
-    const a = integer(random, 1, 5), n = integer(random, 1, 4), b = integer(random, 1, 3);
+  definite(random, gentle = false) {
+    const a = gentle ? 1 : integer(random, 1, 5), n = gentle ? 0 : integer(random, 1, 4), b = gentle ? 1 : integer(random, 1, 3);
     const answer = F(a * b ** (n + 1), n + 1);
     return {
       family: "power-integral", parameters: { a, n, b }, prompt: "Evaluate the definite integral.",
@@ -220,8 +234,8 @@ const generators = {
       steps: [`An antiderivative is (${ft(F(a, n + 1))})${p("x", n + 1)}.`, `By the Fundamental Theorem of Calculus, evaluate F(${b}) − F(0).`, `The integral equals (${a}/${n + 1}) · ${p(String(b), n + 1)} = ${ft(answer)}.`]
     };
   },
-  antiderivatives(random) {
-    const a = integer(random, 2, 6), n = integer(random, 2, 5);
+  antiderivatives(random, gentle = false) {
+    const a = gentle ? 1 : integer(random, 2, 6), n = gentle ? 0 : integer(random, 2, 5);
     const candidate = (coefficient, exponent, constant, reason) => ({ text: `(${ft(coefficient)})${p("x", exponent)}${constant ? " + C" : ""}`, model: { coefficient, exponent, constant }, reason });
     return {
       family: "antiderivative", parameters: { a, n }, prompt: "Find the general antiderivative over the real numbers.",
@@ -235,8 +249,8 @@ const generators = {
       steps: [`Use ∫ xⁿ dx = xⁿ⁺¹/(n + 1) + C for n ≠ −1.`, `Increase ${n} to ${n + 1}, and divide the coefficient by ${n + 1}.`, `The general answer is (${ft(F(a, n + 1))})${p("x", n + 1)} + C. Differentiating recovers ${t(a, p("x", n))}.`]
     };
   },
-  transcendental(random) {
-    const a = integer(random, 2, 6), b = integer(random, 2, 5);
+  transcendental(random, gentle = false) {
+    const a = gentle ? 1 : integer(random, 2, 6), b = gentle ? 1 : integer(random, 2, 5);
     const variant = choose(random, ["sine", "exponential"]);
     return {
       family: variant, parameters: { a, b }, prompt: "Find the instantaneous rate f′(0).",
@@ -438,13 +452,14 @@ const generators = {
   }
 };
 
-export function generateProblem(courseId, topicId, random = Math.random) {
+export function generateProblem(courseId, topicId, random = Math.random, level = "standard") {
   const course = COURSES.find(item => item.id === String(courseId));
   if (!course) throw new RangeError("Unknown course.");
+  if (!["standard", "gentle"].includes(level)) throw new RangeError("Unknown problem level.");
   const topic = topicId === "mixed" ? choose(random, course.topics)[0] : topicId;
   const definition = course.topics.find(([id]) => id === topic);
   if (!definition || !generators[topic]) throw new RangeError("Topic does not belong to this course.");
-  const problem = generators[topic](random);
+  const problem = generators[topic](random, course.id === "1" && level === "gentle");
   const rules = SOLUTION_RULES[problem.family];
   if (!rules?.length) throw new Error(`Missing solution rules for ${problem.family}.`);
   problem.choices = shuffle(random, problem.choices);

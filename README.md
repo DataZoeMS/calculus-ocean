@@ -51,6 +51,9 @@ Stokes/divergence theorem exercises are claimed.
 ## Using the site
 
 - Choose a course and topic, select an answer, then inspect the worked solution.
+  Calculus I also offers a **Gentle start** level with simpler limits, derivatives,
+  optimization, and integration examples. The **Calculus I cheat sheet** in the
+  field guide summarizes useful rules and a repeatable problem-solving process.
   Every solution includes **Theorems & rules used** with the relevant names,
   formulas, and applicability conditions before the step-by-step working.
   Answers lock after one selection. **Study the solution** reveals the answer
@@ -67,7 +70,7 @@ Stokes/divergence theorem exercises are claimed.
 
 ### Scratch pad
 
-Draw with a finger, Apple Pencil, or mouse on the fixed HTML drawing surface.
+Draw with a finger, Apple Pencil, or mouse on the larger 4:3 fixed HTML drawing surface.
 The surface uses `touch-action: none`, **local**, non-passive `touchstart` and
 `touchmove` prevention, pointer capture, and non-interactive SVG children.
 There is no document-wide scroll lock: scroll normally outside the pad.
