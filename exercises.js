@@ -207,7 +207,11 @@ const generators = {
     return {
       family: "chain", parameters: { a, b, n }, prompt: "Find f′(x).", expression: `f(x) = ${p(inner, n)}`,
       note: "Differentiate the outer power and the inner linear function.",
-      choices: symbolic(candidate(a * n, n - 1), [
+      choices: symbolic(candidate(a * n, n - 1), gentle ? [
+        candidate(n + 1, n - 1, "Apply the power rule to get the coefficient n."),
+        candidate(a * n, n, "The power rule reduces the exponent by one."),
+        candidate(a * n, n + 1, "Differentiating lowers the exponent; it does not increase it.")
+      ] : [
         candidate(n, n - 1, "The chain rule also multiplies by the inner derivative a."),
         candidate(a * n, n, "The power rule reduces the exponent by one."),
         candidate(a * n, n + 1, "Differentiating lowers the exponent; it does not increase it.")
