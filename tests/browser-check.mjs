@@ -1,0 +1,244 @@
+import assert from "node:assert/strict";
+import { createServer } from "node:http";
+import { readFile, mkdir } from "node:fs/promises";
+import { join, resolve } from "node:path";
+import { pathToFileURL } from "node:url";
+
+const modulePath = process.env.PLAYWRIGHT_MODULE;
+const { webkit, devices } = await import(modulePath ? pathToFileURL(join(modulePath, "index.mjs")).href : "playwright");
+const files = new Set(["index.html", "styles.css", "app.js", "math.js", "helpers.js", "scratch.js", "exercises.js"]);
+const mime = { html: "text/html", js: "text/javascript", css: "text/css" };
+const server = createServer(async (request, response) => {
+  const path = new URL(request.url, "http://localhost").pathname.replace(/^\/calculus-ocean\//, "");
+  const file = path === "" ? "index.html" : path;
+  if (!files.has(file)) { response.writeHead(404).end(); return; }
+  try {
+    const content = await readFile(join(process.cwd(), file));
+    response.writeHead(200, { "Content-Type": mime[file.split(".").pop()] + "; charset=utf-8" }).end(content);
+  } catch (error) {
+    console.error(error); response.writeHead(500).end("Read failed");
+  }
+});
+await new Promise(resolve => server.listen(0, "127.0.0.1", resolve));
+const url = `http://127.0.0.1:${server.address().port}/calculus-ocean/`;
+const output = process.env.BROWSER_ARTIFACTS ? resolve(process.env.BROWSER_ARTIFACTS) : null;
+if (output) await mkdir(output, { recursive: true });
+let browser;
+const failures = [];
+try {
+  browser = await webkit.launch({ headless: true });
+  const context = await browser.newContext({ viewport: { width: 1440, height: 1100 }, colorScheme: "light", reducedMotion: "reduce" });
+  const page = await context.newPage();
+  page.on("pageerror", error => failures.push(error.message));
+  await page.goto(url);
+  await page.locator(".answer").first().waitFor();
+  assert.equal(await page.locator("#app-error").isVisible(), false);
+  assert.equal(await page.locator(".answer").count(), 4);
+  assert.equal(await page.locator(".whale").evaluate(el => getComputedStyle(el).animationName), "none");
+  assert.equal(await page.locator("#timer").textContent(), "00:00");
+  await page.waitForTimeout(1100);
+  assert.equal(await page.locator("#timer").textContent(), "00:00");
+  await page.locator("#timer-toggle").click();
+  await page.waitForTimeout(1200);
+  assert.notEqual(await page.locator("#timer").textContent(), "00:00");
+  await page.locator("#timer-toggle").click();
+  const stopped = await page.locator("#timer").textContent();
+  await page.waitForTimeout(1100);
+  assert.equal(await page.locator("#timer").textContent(), stopped);
+  await page.locator("#timer-reset").click();
+  assert.equal(await page.locator("#timer").textContent(), "00:00");
+  assert.equal(await page.locator("#timer-toggle").textContent(), "Start timer");
+
+  // Verify every visible course/topic can render, accept one answer, and reveal worked steps.
+  const courses = await page.locator("#course option").evaluateAll(items => items.map(item => item.value));
+  let renderedTopics = 0;
+  for (const course of courses) {
+    await page.locator("#course").selectOption(course);
+    const topics = await page.locator("#topic option").evaluateAll(items => items.map(item => item.value).filter(value => value !== "mixed"));
+    for (const topic of topics) {
+      await page.locator("#topic").selectOption(topic);
+      assert.equal(await page.locator(".answer").count(), 4);
+      await page.locator(".answer").first().click();
+      assert.equal(await page.locator("#solution").getAttribute("open"), "");
+      assert.ok(await page.locator("#solution-steps li").count() >= 3);
+      assert.equal(await page.locator(".answer:disabled").count(), 4);
+      assert.equal(await page.locator(".answer.correct").count(), 1);
+      assert.ok((await page.locator("#feedback").textContent()).length > 30);
+      renderedTopics++;
+    }
+  }
+  assert.equal(renderedTopics, 20);
+  await page.locator("#course").selectOption("1");
+  await page.locator("#topic").selectOption("limits");
+  // Use explicit answer text, rather than hoping a random selection exercises both feedback branches.
+  let expression = await page.locator("#question-expression").textContent();
+  let correctText = String(2 * Number(expression.match(/x − (\d+)\)/)[1]));
+  let answerTexts = await page.locator(".answer .formula").allTextContents();
+  await page.locator(".answer").nth(answerTexts.indexOf(correctText)).click();
+  assert.match(await page.locator("#feedback").textContent(), /Nicely reasoned/);
+  await page.locator("#next").click();
+  expression = await page.locator("#question-expression").textContent();
+  correctText = String(2 * Number(expression.match(/x − (\d+)\)/)[1]));
+  answerTexts = await page.locator(".answer .formula").allTextContents();
+  await page.locator(".answer").nth(answerTexts.findIndex(text => text !== correctText)).click();
+  assert.match(await page.locator("#feedback").textContent(), /A useful place to learn/);
+  await page.locator("#next").click();
+  const scoreBeforeReveal = await page.locator("#score").textContent();
+  await page.locator("#reveal").click();
+  assert.equal(await page.locator("#score").textContent(), scoreBeforeReveal);
+  assert.match(await page.locator("#feedback").textContent(), /Study mode/);
+  await page.locator("#next").click();
+  assert.equal(await page.locator("#question-heading").evaluate(el => document.activeElement === el), true);
+  assert.equal(await page.locator("#solution").isVisible(), false);
+  assert.equal(await page.locator(".answer:not(:disabled)").count(), 4);
+
+  const pad = page.locator("#scratch-pad");
+  await pad.scrollIntoViewIfNeeded();
+  const box = await pad.boundingBox();
+  await page.mouse.move(box.x + box.width * 0.2, box.y + box.height * 0.35);
+  await page.mouse.down();
+  await page.mouse.move(box.x + box.width * 0.7, box.y + box.height * 0.6, { steps: 24 });
+  await page.mouse.up();
+  assert.equal(await page.locator("#scratch-ink-layer path").count(), 1);
+  const drawing = await page.locator("#scratch-ink-layer").innerHTML();
+  const question = await page.locator("#question-expression").textContent();
+  await page.locator('[data-panel="graph-panel"]').click();
+  await page.locator('[data-panel="circle-panel"]').click();
+  await page.locator('[data-panel="scratch-panel"]').click();
+  await page.locator('[data-panel="scratch-panel"]').click();
+  assert.equal(await page.locator("#scratch-ink-layer").innerHTML(), drawing);
+  assert.equal(await page.locator("#question-expression").textContent(), question);
+  await page.locator("#course").selectOption("1");
+  await page.locator("#topic").selectOption("derivatives");
+  await page.locator("#next").click();
+  assert.equal(await page.locator("#scratch-ink-layer").innerHTML(), drawing);
+  await page.locator("#scratch-guide").selectOption("circle");
+  assert.equal(await page.locator("#scratch-ink-layer").innerHTML(), drawing);
+  assert.equal(await page.locator("#scratch-guide-layer circle").count(), 1);
+  await page.locator("#clear").click();
+  assert.equal(await page.locator("#scratch-ink-layer path").count(), 0);
+  await page.locator("#undo").click();
+  assert.equal(await page.locator("#scratch-ink-layer").innerHTML(), drawing);
+  await page.locator("#stamp").click();
+  await pad.click({ position: { x: 50, y: 50 } });
+  assert.equal(await page.locator("#scratch-ink-layer text").count(), 1);
+  await page.locator("#undo").click();
+  assert.equal(await page.locator("#scratch-ink-layer text").count(), 0);
+  await page.locator("#eraser").click();
+  await pad.click({ position: { x: box.width * 0.45, y: box.height * 0.475 } });
+  assert.equal(await page.locator("#scratch-ink-layer path").count(), 0);
+  await page.locator("#undo").click();
+  assert.equal(await page.locator("#scratch-ink-layer path").count(), 1);
+  await pad.focus();
+  await page.keyboard.press("Space");
+  await page.keyboard.press("ArrowRight");
+  await page.keyboard.press("ArrowDown");
+  await page.keyboard.press("Space");
+  assert.equal(await page.locator("#scratch-ink-layer path").count(), 2);
+  await page.keyboard.press("Enter");
+  assert.equal(await page.locator("#scratch-ink-layer text").count(), 1);
+  await page.keyboard.press("Space");
+  await page.keyboard.press("ArrowRight");
+  await page.keyboard.press("Escape");
+  assert.equal(await page.locator("#scratch-ink-layer path").count(), 2);
+
+  await page.locator("#graph-kind").selectOption("quadratic");
+  await page.locator("#graph-a").fill("2");
+  await page.locator("#graph-x").fill("2");
+  assert.match(await page.locator("#graph-tangent-readout").textContent(), /f\(2\) ≈ 8; slope f′\(2\) ≈ 8/);
+  await page.locator("#area-enabled").check();
+  assert.match(await page.locator("#graph-area-readout").textContent(), /5\.333/);
+  assert.ok((await page.locator("#graph-area").getAttribute("d")).length > 50);
+  await page.locator("#graph-kind").selectOption("reciprocal");
+  await page.locator("#graph-left").fill("-1");
+  await page.locator("#graph-right").fill("1");
+  assert.match(await page.locator("#graph-area-readout").textContent(), /No finite integral/);
+  assert.equal(await page.locator("#graph-area").getAttribute("d"), "");
+  await page.locator("#graph-x").fill("0");
+  assert.match(await page.locator("#graph-tangent-readout").textContent(), /undefined/);
+  const reciprocalPath = await page.locator("#graph-line").getAttribute("d");
+  assert.equal((reciprocalPath.match(/M/g) || []).length, 2);
+  await page.locator("#graph-kind").selectOption("logarithm");
+  await page.locator("#graph-x").fill("-1");
+  assert.match(await page.locator("#graph-tangent-readout").textContent(), /undefined/);
+  await page.locator("#graph-left").fill("");
+  assert.match(await page.locator("#graph-area-readout").textContent(), /Enter both bounds/);
+  await page.locator("#graph-kind").selectOption("sine");
+  await page.locator("#graph-a").fill("1");
+  await page.locator("#graph-x").fill("1");
+  await page.locator("#graph-left").fill("0");
+  await page.locator("#graph-right").fill("3");
+  await page.locator("#circle-special").selectOption("90");
+  assert.match(await page.locator("#circle-readout").textContent(), /π\/2/);
+  assert.match(await page.locator("#circle-readout").textContent(), /undefined/);
+  await page.locator("#circle-angle").fill("225");
+  assert.match(await page.locator("#circle-readout").textContent(), /−√2\/2/);
+  await page.locator("#circle-angle").fill("37");
+  assert.match(await page.locator("#circle-readout").textContent(), /≈/);
+  await page.locator("#circle-special").selectOption("45");
+  await page.locator("#theme-toggle").click();
+  assert.equal(await page.locator("html").getAttribute("data-theme"), "dark");
+  await page.locator("#theme-toggle").click();
+  if (output) {
+    await page.evaluate(() => window.scrollTo(0, 0));
+    await page.screenshot({ path: join(output, "desktop-light.png"), fullPage: true });
+  }
+  assert.equal(await page.locator("#app-error").isVisible(), false);
+  await context.close();
+
+  const ipad = await browser.newContext({ ...devices["iPad (gen 7)"], colorScheme: "dark", reducedMotion: "reduce" });
+  const tablet = await ipad.newPage();
+  tablet.on("pageerror", error => failures.push(error.message));
+  await tablet.goto(url);
+  await tablet.locator(".answer").first().waitFor();
+  assert.equal(await tablet.locator("html").getAttribute("data-theme"), "dark");
+  await tablet.locator("#scratch-pad").scrollIntoViewIfNeeded();
+  const tabletPad = await tablet.locator("#scratch-pad").boundingBox();
+  await tablet.touchscreen.tap(tabletPad.x + 50, tabletPad.y + 50);
+  assert.equal(await tablet.locator("#scratch-ink-layer path").count(), 1, "real WebKit touch tap should draw");
+  const touchRules = await tablet.evaluate(() => {
+    const pad = document.getElementById("scratch-pad");
+    const insideStart = new TouchEvent("touchstart", { bubbles: true, cancelable: true });
+    const insideMove = new TouchEvent("touchmove", { bubbles: true, cancelable: true });
+    const outside = new TouchEvent("touchmove", { bubbles: true, cancelable: true });
+    pad.dispatchEvent(insideStart); pad.dispatchEvent(insideMove); document.querySelector(".intro").dispatchEvent(outside);
+    return { start: insideStart.defaultPrevented, move: insideMove.defaultPrevented, outside: outside.defaultPrevented, touchAction: getComputedStyle(pad).touchAction, childPointerEvents: getComputedStyle(document.getElementById("scratch-svg")).pointerEvents, bodyOverflow: getComputedStyle(document.body).overflow };
+  });
+  assert.deepEqual(touchRules, { start: true, move: true, outside: false, touchAction: "none", childPointerEvents: "none", bodyOverflow: "visible" });
+  await tablet.mouse.move(tabletPad.x + 70, tabletPad.y + 80);
+  await tablet.mouse.down();
+  await tablet.mouse.move(tabletPad.x + tabletPad.width + 35, tabletPad.y + 100, { steps: 12 });
+  await tablet.mouse.move(tabletPad.x + 130, tabletPad.y + 120, { steps: 12 });
+  await tablet.mouse.up();
+  assert.equal(await tablet.locator("#scratch-ink-layer path").count(), 2, "pointer capture should preserve a stroke across the boundary");
+  const beforeRotation = await tablet.locator("#scratch-ink-layer").innerHTML();
+  await tablet.setViewportSize({ width: 1080, height: 810 });
+  assert.equal(await tablet.locator("#scratch-ink-layer").innerHTML(), beforeRotation);
+  assert.ok(await tablet.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1));
+  await tablet.locator('[data-panel="graph-panel"]').tap();
+  await tablet.locator('[data-panel="circle-panel"]').tap();
+  await tablet.locator("#circle-special").selectOption("270");
+  assert.match(await tablet.locator("#circle-readout").textContent(), /undefined/);
+  await tablet.evaluate(() => window.scrollTo(0, 0));
+  if (output) await tablet.screenshot({ path: join(output, "ipad-dark-landscape.png"), fullPage: true });
+  for (const width of [360, 390, 768, 820]) {
+    await tablet.setViewportSize({ width, height: 1000 });
+    assert.ok(await tablet.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), `no horizontal overflow at ${width}px`);
+    const undersized = await tablet.locator("button, select, input").evaluateAll(elements => elements.filter(el => {
+      const rect = el.getBoundingClientRect();
+      return rect.width > 0 && rect.height > 0 && el.type !== "checkbox" && rect.height < 43.5;
+    }).map(el => el.id || el.outerHTML));
+    assert.deepEqual(undersized, [], `44px control height at ${width}px`);
+  }
+  await tablet.setViewportSize({ width: 390, height: 844 });
+  await tablet.locator("#theme-toggle").tap();
+  await tablet.evaluate(() => window.scrollTo(0, 0));
+  if (output) await tablet.screenshot({ path: join(output, "mobile-light.png"), fullPage: true });
+  assert.equal(await tablet.locator("#app-error").isVisible(), false);
+  await ipad.close();
+  assert.deepEqual(failures, []);
+  console.log(`PASS: 20 topics, answers/reveals, timer, graph domains, circle, scratch/undo/keyboard, WebKit iPad touch taps, capture, rotation, themes, 360–1440px layouts. Local test server: ${url} (stopped on exit).`);
+} finally {
+  if (browser) await browser.close();
+  await new Promise(resolve => server.close(resolve));
+}
