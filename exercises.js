@@ -2,7 +2,7 @@ import { fraction as F, fractionText as ft, fractionValue as fv, integer, choose
 
 export const COURSES = [
   { id: "1", name: "Calculus I", subtitle: "Change & accumulation", topics: [
-    ["limits", "Limits & continuity"], ["derivatives", "Power & chain rules"], ["applications", "Optimization"],
+    ["limits", "Limits & continuity"], ["power-rule", "Power rule only"], ["derivatives", "Power & chain rules"], ["applications", "Optimization"],
     ["definite", "Definite integrals"], ["antiderivatives", "Antiderivatives"], ["transcendental", "Trig & exponential rates"]
   ] },
   { id: "2", name: "Calculus II", subtitle: "Techniques & infinite sums", topics: [
@@ -34,6 +34,7 @@ const RULES = {
   },
   minimum: {
     name: "Fermat’s theorem & the second-derivative test",
+    tip: "At a differentiable interior extremum, f′ = 0. Find candidate points, then examine f″ and the function’s behavior over its full domain to decide whether a minimum is local or absolute.",
     statement: "At an interior local extremum where f is differentiable, f′ = 0. If f′(c) = 0 and f″(c) > 0 for a twice continuously differentiable function, c is a local minimum. Here the quadratic opens upward everywhere, so its vertex is the unique absolute minimum."
   },
   integral: {
@@ -46,10 +47,12 @@ const RULES = {
   },
   sine: {
     name: "Derivative of sine",
+    tip: "d[sin(x)]/dx = cos(x) for angles in radians. For sin(g(x)), multiply by g′(x). Differentiate first, then evaluate at the requested point.",
     statement: "d[sin(x)]/dx = cos(x) when x is in radians; cos(0) = 1. For sin(g(x)), also apply the chain rule."
   },
   exponential: {
     name: "Exponential derivative & antiderivative",
+    tip: "d[exp(x)]/dx = exp(x) and ∫ exp(x) dx = exp(x) + C. For a composed exponential, use the chain rule. Keep any constant multiplier.",
     statement: "d[exp(x)]/dx = exp(x), ∫ exp(x) dx = exp(x) + C, and exp(0) = 1. Here exp(x) means eˣ."
   },
   substitution: {
@@ -66,6 +69,7 @@ const RULES = {
   },
   logarithm: {
     name: "Logarithmic antiderivative",
+    tip: "∫ (1/x) dx = ln|x| + C on an interval excluding 0. Evaluate at finite bounds first, then examine the upper-endpoint limit to decide convergence.",
     statement: "∫ (1/x) dx = ln|x| + C on any interval excluding 0. For positive x this is ln(x) + C, and ln(R) grows without bound as R → ∞."
   },
   geometric: {
@@ -74,6 +78,7 @@ const RULES = {
   },
   ratio: {
     name: "Ratio test & radius of convergence",
+    tip: "For eventually nonzero terms, form L = lim |aₙ₊₁/aₙ|. L < 1 gives absolute convergence; L > 1 gives divergence; L = 1 is inconclusive. Solve the inequality in |x − c| to identify the radius. Endpoints need separate checks.",
     statement: "For eventually nonzero terms, let L = lim |aₙ₊₁/aₙ|. L < 1 gives absolute convergence; L > 1 gives divergence; L = 1 is inconclusive. Solve for |x − c| < R to find the radius, and check endpoints separately. At x = c in this exercise, every term is 0, so convergence is immediate."
   },
   parametric: {
@@ -102,6 +107,7 @@ const RULES = {
   },
   fubini: {
     name: "Fubini’s theorem",
+    tip: "For a continuous integrand on a closed rectangle or box, integrate one variable at a time, holding the others constant. Follow the order of the differentials and apply the matching bounds at each stage.",
     statement: "A continuous function on a closed rectangle or box can be integrated one variable at a time in either order (or any order in 3D). Hold the other variables constant during each integration. The polynomial integrands here meet this condition."
   },
   mass: {
@@ -121,6 +127,7 @@ const RULES = {
 const SOLUTION_RULES = {
   difference: [RULES.factoring, RULES.continuity],
   continuity: [RULES.factoring, RULES.continuity],
+  power: [RULES.derivative],
   chain: [RULES.derivative, RULES.chain],
   minimum: [RULES.derivative, RULES.minimum],
   "power-integral": [RULES.integral, RULES.fundamental],
@@ -174,6 +181,21 @@ function symbolic(correct, wrong) {
 }
 
 const generators = {
+  "power-rule"(random) {
+    const a = choose(random, [-1, 1]) * integer(random, 1, 9), n = integer(random, 2, 8);
+    const candidate = (coefficient, exponent, reason) => ({ text: t(coefficient, p("x", exponent)), model: { coefficient, exponent }, reason });
+    return {
+      family: "power", parameters: { a, n }, prompt: "Find f′(x) using the power rule.",
+      expression: `f(x) = ${t(a, p("x", n))}`,
+      note: "A single power of x with a constant coefficient. No chain, product, or quotient rule needed.",
+      choices: symbolic(candidate(a * n, n - 1), [
+        candidate(a, n - 1, "Multiply the coefficient by the original exponent as well as lowering the exponent."),
+        candidate(a * n, n, "After multiplying by the exponent, subtract one from that exponent."),
+        candidate(-a * n, n - 1, "Keep the sign of the constant coefficient when applying the power rule.")
+      ]),
+      steps: [`Use d(axⁿ)/dx = an xⁿ⁻¹, with a = ${a} and n = ${n}.`, `Multiply the coefficient: ${a} · ${n} = ${a * n}. Reduce the exponent: ${n} − 1 = ${n - 1}.`, `Therefore f′(x) = ${t(a * n, p("x", n - 1))}.`]
+    };
+  },
   limits(random) {
     const a = integer(random, 1, 8);
     const variant = choose(random, ["difference", "continuity"]);
@@ -448,7 +470,8 @@ export function generateProblem(courseId, topicId, random = Math.random) {
   const rules = SOLUTION_RULES[problem.family];
   if (!rules?.length) throw new Error(`Missing solution rules for ${problem.family}.`);
   problem.choices = shuffle(random, problem.choices);
-  return { ...problem, rules, course: course.id, topic, topicName: definition[1], answer: problem.choices.findIndex(choice => choice.correct) };
+  const tips = rules.map(rule => ({ name: rule.name, statement: rule.tip || rule.statement }));
+  return { ...problem, rules, tips, course: course.id, topic, topicName: definition[1], answer: problem.choices.findIndex(choice => choice.correct) };
 }
 
 export function answerValue(problem) {

@@ -17,6 +17,7 @@ parameters. Choose a specific focus or mixed practice within a course.
 | Course | Focus | Actual exercise family |
 | --- | --- | --- |
 | I | Limits & continuity | Removable holes in `(x² − a²)/(x − a)`; limits and continuous extensions |
+| I | Power rule only | Derivatives of single monomials `axⁿ`, with nonzero integer coefficients from −9 to 9 and exponents 2–8; no chain, product, or quotient rule |
 | I | Power & chain rules | Symbolic first derivatives of powers of linear functions |
 | I | Optimization | Absolute-minimum locations for upward-opening quadratics |
 | I | Definite integrals | Power functions over `[0, b]` using the Fundamental Theorem of Calculus |
@@ -56,6 +57,12 @@ Stokes/divergence theorem exercises are claimed.
   Answers lock after one selection. **Study the solution** reveals the answer
   without increasing the answered/correct totals. **Next question** also lets
   you skip without a penalty.
+- Open **Tips · helpful rules, not the answer** before answering to see relevant
+  general rules and conditions. Tips do not substitute the problem's values,
+  compute steps, mark an answer, or change your score. They close and update for
+  each new problem. The full worked solution remains a separate action.
+- For isolated derivative practice, select **Calculus I → Power rule only**.
+  The existing **Power & chain rules** topic remains available separately.
 - The **Start / Stop / Reset timer** is entirely manual. Reset stops it and
   returns it to zero; answering and changing courses do not affect it.
 - Toggle any combination of **Scratch pad**, **Graph lab**, and **Unit circle**.
@@ -68,6 +75,12 @@ Stokes/divergence theorem exercises are claimed.
 ### Scratch pad
 
 Draw with a finger, Apple Pencil, or mouse on the fixed HTML drawing surface.
+The pad now has a taller **960 × 800** drawing space (one-third more height
+at the same width than the original 960 × 600 pad), plus a wider share of the
+desktop layout. **Expand pad** switches to full-page-width working on screens
+wider than 760px; **Compact layout** restores the side-by-side view. On narrow
+screens the pad already uses the available width. Neither resizing nor expanding
+clears or distorts your work.
 The surface uses `touch-action: none`, **local**, non-passive `touchstart` and
 `touchmove` prevention, pointer capture, and non-interactive SVG children.
 There is no document-wide scroll lock: scroll normally outside the pad.
@@ -79,7 +92,14 @@ and blank guides can be changed without touching the ink. The 3D guide is a
 flat projection for sketches, not a 3D rendering engine.
 
 Select an integral, double/triple integral, gradient, infinity, theta, or vector
-stamp: **Place stamp activates automatically**, so tap a location next without
+stamp, or a **common-rule formula stamp**: power, chain, product, quotient,
+integral power, integration by parts, or Fundamental Theorem of Calculus.
+Formula stamps include the rule name, general formula, and essential conditions;
+they are references, not solved examples. Their text fits inside the pad even
+when placed near an edge. Erasing any part of a rule's text box removes the
+whole stamp, and Undo restores it.
+
+**Place stamp activates automatically**, so tap a location next without
 pressing another button. Placement returns to the pen and resets the picker,
 allowing the same symbol to be picked again. The **Place stamp** button and
 keyboard Enter repeat the last chosen symbol (initially ∫).
@@ -156,7 +176,7 @@ npm test
 ```
 
 The dependency-free Node suite checks 1,000 seeded instances of every topic
-(20,000 instances), choice uniqueness and mathematical equivalence, course
+(21,000 instances), choice uniqueness and mathematical equivalence, course
 boundaries, mixed-topic reachability, and every generator branch. Independent
 finite differences, Simpson quadrature, finite series sums, and vector
 identities verify the generated answers. Helper tests cover all graph
@@ -164,6 +184,9 @@ derivatives/integrals, domain exclusions, reversed/equal bounds, exact
 unit-circle labels, undefined tangents, and eraser geometry.
 Every generated problem is also checked for named solution rules and conditions,
 including the different rules used by the alternate problem families.
+All 126 power-only coefficient/exponent combinations are checked independently.
+Tips are verified to be general, parameter-independent references, and rule
+stamps are checked for their formulas, conditions, and eraser hit geometry.
 
 Optional browser regression checks use an **existing Playwright installation**
 with its WebKit browser. No browser dependencies are needed by the deployed app.
@@ -179,12 +202,15 @@ npm run test:browser
 
 The runner starts a temporary loopback server on an available port, serves the
 app under `/calculus-ocean/` to exercise Pages-relative URLs, and closes the
-server/browser in `finally`. It covers all 20 topic UIs, correct/incorrect and
+server/browser in `finally`. It covers all 21 topic UIs, correct/incorrect and
 study feedback, answer locking, timer semantics, helper preservation, drawing,
 stamping, erasing, undo/clear, keyboard drawing, graph/circle interaction,
 domain messaging, light/dark/reduced motion, and 360–1440px layouts.
 It verifies rule display on answers and study reveals, automatic stamp selection
 from pen/eraser modes, repeat selection, and placement with touch and keyboard.
+Additional checks verify non-revealing tips, the larger pad's measured dimensions,
+full-width expansion without losing work, all seven common-rule stamps,
+edge-clamped placement, and whole-stamp erasing/undo.
 
 WebKit iPad emulation includes actual touch taps, local touch-event prevention,
 pointer-captured drags outside and back into the pad, and viewport rotation.

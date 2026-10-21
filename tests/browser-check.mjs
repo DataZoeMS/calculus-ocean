@@ -3,6 +3,7 @@ import { createServer } from "node:http";
 import { readFile, mkdir } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
+import { STAMPS } from "../scratch.js";
 
 const modulePath = process.env.PLAYWRIGHT_MODULE;
 const { webkit, devices } = await import(modulePath ? pathToFileURL(join(modulePath, "index.mjs")).href : "playwright");
@@ -25,6 +26,18 @@ const output = process.env.BROWSER_ARTIFACTS ? resolve(process.env.BROWSER_ARTIF
 if (output) await mkdir(output, { recursive: true });
 let browser;
 const failures = [];
+async function assertStampFits(page) {
+  assert.equal(await page.locator("#scratch-ink-layer text").last().evaluate(node => {
+    const bounds = node.getBBox(), matrix = node.getCTM();
+    const viewport = node.ownerSVGElement;
+    const inverse = viewport.getCTM().inverse();
+    const corners = [[bounds.x, bounds.y], [bounds.x + bounds.width, bounds.y + bounds.height]].map(([x, y]) => {
+      const point = viewport.createSVGPoint(); point.x = x; point.y = y;
+      return point.matrixTransform(matrix).matrixTransform(inverse);
+    });
+    return corners[0].x >= 15 && corners[0].y >= 15 && corners[1].x <= 945 && corners[1].y <= 785;
+  }), true, "entire stamp stays within the enlarged drawing space");
+}
 try {
   browser = await webkit.launch({ headless: true });
   const context = await browser.newContext({ viewport: { width: 1440, height: 1100 }, colorScheme: "light", reducedMotion: "reduce" });
@@ -58,6 +71,22 @@ try {
     for (const topic of topics) {
       await page.locator("#topic").selectOption(topic);
       assert.equal(await page.locator(".answer").count(), 4);
+      assert.equal(await page.locator("#tips").getAttribute("open"), null);
+      const beforeTips = await page.locator("#score").textContent();
+      const beforeQuestion = await page.locator("#question-expression").textContent();
+      const beforeChoices = await page.locator("#answers").innerHTML();
+      await page.locator("#tips summary").click();
+      assert.ok(await page.locator("#tip-rules dt").count() > 0);
+      assert.equal(await page.locator("#score").textContent(), beforeTips);
+      assert.equal(await page.locator("#question-expression").textContent(), beforeQuestion);
+      assert.equal(await page.locator("#answers").innerHTML(), beforeChoices);
+      assert.equal(await page.locator("#solution").isVisible(), false);
+      assert.equal(await page.locator("#solution-steps li").count(), 0);
+      if (topic === "power-rule") {
+        assert.match(await page.locator("#tip-rules").textContent(), /Power, sum & constant-multiple rules/);
+        assert.doesNotMatch(await page.locator("#tip-rules").textContent(), /chain|product|quotient/i);
+      }
+      await page.locator("#tips summary").click();
       await page.locator(".answer").first().click();
       assert.equal(await page.locator("#solution").getAttribute("open"), "");
       assert.ok(await page.locator("#solution-steps li").count() >= 3);
@@ -70,7 +99,7 @@ try {
       renderedTopics++;
     }
   }
-  assert.equal(renderedTopics, 20);
+  assert.equal(renderedTopics, 21);
   await page.locator("#course").selectOption("1");
   await page.locator("#topic").selectOption("limits");
   // Use explicit answer text, rather than hoping a random selection exercises both feedback branches.
@@ -108,6 +137,7 @@ try {
   const pad = page.locator("#scratch-pad");
   await pad.scrollIntoViewIfNeeded();
   const box = await pad.boundingBox();
+  assert.ok(box.height >= box.width * 0.82, "default pad is at least one-third taller than the former 8:5 pad");
   await page.mouse.move(box.x + box.width * 0.2, box.y + box.height * 0.35);
   await page.mouse.down();
   await page.mouse.move(box.x + box.width * 0.7, box.y + box.height * 0.6, { steps: 24 });
@@ -115,6 +145,26 @@ try {
   assert.equal(await page.locator("#scratch-ink-layer path").count(), 1);
   const drawing = await page.locator("#scratch-ink-layer").innerHTML();
   const question = await page.locator("#question-expression").textContent();
+  await page.locator("#scratch-expand").click();
+  const expandedBox = await pad.boundingBox();
+  assert.ok(expandedBox.width > box.width * 1.7, "expanded pad uses the full workspace width");
+  assert.equal(await page.locator("#scratch-ink-layer").innerHTML(), drawing);
+  assert.equal(await page.locator("#question-expression").textContent(), question);
+  await page.locator("#scratch-expand").click();
+  assert.equal(await page.locator("#scratch-ink-layer").innerHTML(), drawing);
+  assert.ok(Math.abs((await pad.boundingBox()).width - box.width) < 1);
+  await pad.scrollIntoViewIfNeeded();
+  const lowerPad = await pad.boundingBox();
+  await page.mouse.move(lowerPad.x + lowerPad.width * 0.2, lowerPad.y + lowerPad.height * 0.85);
+  await page.mouse.down();
+  await page.mouse.move(lowerPad.x + lowerPad.width * 0.6, lowerPad.y + lowerPad.height * 0.9, { steps: 8 });
+  await page.mouse.up();
+  const lowerStroke = await page.locator("#scratch-ink-layer path").last().getAttribute("d");
+  assert.ok(Number(lowerStroke.match(/^M[\d.]+ ([\d.]+)/)[1]) > 670, "the new lower drawing area receives correctly mapped strokes");
+  await page.locator("#undo").click();
+  assert.equal(await page.locator("#scratch-ink-layer").innerHTML(), drawing);
+  await page.locator("#tips summary").click();
+  assert.equal(await page.locator("#scratch-ink-layer").innerHTML(), drawing);
   await page.locator('[data-panel="graph-panel"]').click();
   await page.locator('[data-panel="circle-panel"]').click();
   await page.locator('[data-panel="scratch-panel"]').click();
@@ -175,6 +225,42 @@ try {
   await page.keyboard.press("ArrowRight");
   await page.keyboard.press("Escape");
   assert.equal(await page.locator("#scratch-ink-layer path").count(), 2);
+
+  for (const [kind, stamp] of Object.entries(STAMPS).filter(([id]) => id.startsWith("rule-"))) {
+    const beforeStamp = await page.locator("#scratch-ink-layer").innerHTML();
+    await page.locator("#stamp-kind").selectOption(kind);
+    const padSize = await pad.boundingBox();
+    await pad.click({ position: { x: padSize.width - 4, y: padSize.height - 4 } });
+    assert.deepEqual(await page.locator("#scratch-ink-layer text").last().locator("tspan").allTextContents(), stamp.lines);
+    await assertStampFits(page);
+    await page.locator("#eraser").click();
+    await pad.scrollIntoViewIfNeeded();
+    const erasePoint = await page.locator("#scratch-ink-layer text").last().evaluate(text => {
+      const bounds = text.getBBox(), point = text.ownerSVGElement.createSVGPoint();
+      point.x = bounds.x + bounds.width - 3; point.y = bounds.y + bounds.height / 2;
+      const screen = point.matrixTransform(text.getScreenCTM());
+      return { x: screen.x, y: screen.y, width: bounds.width * text.getScreenCTM().a };
+    });
+    assert.ok(erasePoint.width > 100, "formula is a readable multi-line stamp");
+    await page.mouse.click(erasePoint.x, erasePoint.y);
+    assert.equal(await page.locator("#scratch-ink-layer").innerHTML(), beforeStamp, "eraser reaches the far side of a wide rule stamp");
+    await page.locator("#undo").click();
+    await assertStampFits(page);
+    await page.locator("#undo").click();
+    assert.equal(await page.locator("#scratch-ink-layer").innerHTML(), beforeStamp);
+  }
+  await page.locator("#pen").click();
+  await page.locator("#topic").selectOption("power-rule");
+  await page.locator("#tips summary").click();
+  await page.locator("#stamp-kind").selectOption("rule-chain");
+  await pad.click({ position: { x: 20, y: 20 } });
+  await assertStampFits(page);
+  const withRules = await page.locator("#scratch-ink-layer").innerHTML();
+  await page.locator("#scratch-expand").click();
+  await assertStampFits(page);
+  await page.locator("#scratch-expand").click();
+  assert.equal(await page.locator("#scratch-ink-layer").innerHTML(), withRules, "formula stamps survive expanding and restoring the pad");
+  if (output) await page.locator("#scratch-panel").screenshot({ path: join(output, "larger-pad-rule-stamp.png") });
 
   await page.locator("#graph-kind").selectOption("quadratic");
   await page.locator("#graph-a").fill("2");
@@ -254,6 +340,10 @@ try {
   await tablet.mouse.move(dragPad.x + 130, dragPad.y + 120, { steps: 12 });
   await tablet.mouse.up();
   assert.equal(await tablet.locator("#scratch-ink-layer path").count(), 2, "pointer capture should preserve a stroke across the boundary");
+  await tablet.locator("#stamp-kind").selectOption("rule-chain");
+  await tablet.locator("#scratch-pad").tap({ position: { x: 5, y: 5 } });
+  await assertStampFits(tablet);
+  assert.match(await tablet.locator("#scratch-ink-layer text").textContent(), /Chain rule/);
   const beforeRotation = await tablet.locator("#scratch-ink-layer").innerHTML();
   await tablet.setViewportSize({ width: 1080, height: 810 });
   assert.equal(await tablet.locator("#scratch-ink-layer").innerHTML(), beforeRotation);
@@ -268,6 +358,9 @@ try {
     await tablet.setViewportSize({ width, height: 1000 });
     await tablet.locator("#course").selectOption("3");
     await tablet.locator("#topic").selectOption("curl");
+    await tablet.locator("#tips summary").tap();
+    assert.equal(await tablet.locator("#solution").isVisible(), false);
+    await assertStampFits(tablet);
     await tablet.locator("#reveal").tap();
     assert.match(await tablet.locator("#solution-rules").textContent(), /Curl definition/);
     assert.ok(await tablet.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), `no horizontal overflow at ${width}px`);
@@ -284,7 +377,7 @@ try {
   assert.equal(await tablet.locator("#app-error").isVisible(), false);
   await ipad.close();
   assert.deepEqual(failures, []);
-  console.log(`PASS: 20 topics, named solution rules, answers/reveals, timer, graph domains, circle, automatic/repeated stamp placement, scratch/undo/keyboard, WebKit iPad touch taps, capture, rotation, themes, 360–1440px layouts. Local test server: ${url} (stopped on exit).`);
+  console.log(`PASS: 21 topics including power-only, spoiler-free tips, enlarged/expanded pad, edge-safe common-rule stamps, named solution rules, answers/reveals, timer, graph domains, circle, automatic/repeated stamp placement, scratch/undo/keyboard, WebKit iPad touch taps, capture, rotation, themes, 360–1440px layouts. Local test server: ${url} (stopped on exit).`);
 } finally {
   if (browser) await browser.close();
   await new Promise(resolve => server.close(resolve));

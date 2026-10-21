@@ -21,6 +21,15 @@ function topicOptions() {
   for (const [id, name] of course.topics) $("topic").append(new Option(name, id));
 }
 
+function renderRules(target, rules) {
+  target.replaceChildren();
+  for (const rule of rules) {
+    const name = document.createElement("dt"), statement = document.createElement("dd");
+    name.textContent = rule.name; statement.textContent = rule.statement;
+    target.append(name, statement);
+  }
+}
+
 function nextQuestion(moveFocus = false) {
   let next;
   for (let attempts = 0; attempts < 12; attempts++) {
@@ -56,6 +65,8 @@ function nextQuestion(moveFocus = false) {
   $("solution").open = false;
   $("solution-rules").replaceChildren();
   $("solution-steps").replaceChildren();
+  $("tips").open = false;
+  renderRules($("tip-rules"), problem.tips);
   $("reveal").disabled = false;
   $("next").textContent = "Next question →";
   if (moveFocus) $("question-heading").focus({ preventScroll: true });
@@ -81,11 +92,7 @@ function showSolution(selected = null) {
       button.setAttribute("aria-label", `${button.getAttribute("aria-label")}. ${state.textContent}`);
     }
   }
-  for (const rule of problem.rules) {
-    const name = document.createElement("dt"), statement = document.createElement("dd");
-    name.textContent = rule.name; statement.textContent = rule.statement;
-    $("solution-rules").append(name, statement);
-  }
+  renderRules($("solution-rules"), problem.rules);
   for (const step of problem.steps) {
     const li = document.createElement("li");
     li.textContent = step; $("solution-steps").append(li);

@@ -121,11 +121,16 @@
         <h2 id="question-heading" tabindex="-1">Loading your first question…</h2>
         <div id="question-expression" class="formula question-formula"></div>
         <p id="question-note" class="question-note"></p>
+        <details id="tips" class="tips">
+          <summary>Tips · helpful rules, not the answer</summary>
+          <p class="small">Use these general rules to choose your next step. No values are substituted and no answer is revealed. Your score is unchanged.</p>
+          <dl id="tip-rules" class="rule-list"></dl>
+        </details>
         <div id="answers" class="answers" role="group" aria-label="Answer choices"></div>
         <div id="feedback" class="feedback" role="status" aria-live="polite" aria-atomic="true"></div>
         <details id="solution" class="solution" hidden>
           <summary>Worked solution</summary>
-          <section class="solution-rules" aria-labelledby="solution-rules-heading"><h3 id="solution-rules-heading">Theorems &amp; rules used</h3><dl id="solution-rules"></dl></section>
+          <section class="solution-rules" aria-labelledby="solution-rules-heading"><h3 id="solution-rules-heading">Theorems &amp; rules used</h3><dl id="solution-rules" class="rule-list"></dl></section>
           <h3 class="solution-steps-heading">Apply them step by step</h3><ol id="solution-steps"></ol>
         </details>
         <div class="question-actions"><button id="reveal" class="quiet" type="button">Study the solution</button><button id="next" class="primary" type="button">Next question <span aria-hidden="true">→</span></button></div>
@@ -139,7 +144,7 @@
           <button type="button" data-panel="circle-panel" aria-controls="circle-panel" aria-pressed="false">◯ Unit circle</button>
         </div>
         <section id="scratch-panel" class="panel helper" aria-labelledby="scratch-heading">
-          <div class="section-top"><h3 id="scratch-heading">Think on the page</h3><span class="small">Finger · Pencil · mouse</span></div>
+          <div class="section-top"><div><h3 id="scratch-heading">Think on the page</h3><span class="small">Finger · Pencil · mouse</span></div><button id="scratch-expand" type="button" class="quiet" aria-pressed="false" aria-controls="scratch-pad">Expand pad</button></div>
           <div class="scratch-toolbar" role="group" aria-label="Scratch tools">
             <button id="pen" aria-pressed="true" type="button">Pen</button><button id="eraser" aria-pressed="false" type="button">Eraser</button>
             <label class="compact-field">Ink<select id="ink"><option value="accent">Ocean</option><option value="text">Graphite</option><option value="coral">Coral</option></select></label>
@@ -147,19 +152,19 @@
           </div>
           <div class="scratch-toolbar guide-tools">
             <label class="compact-field">Guide<select id="scratch-guide"><option value="grid">Grid</option><option value="axes">x–y axes</option><option value="circle">Unit circle</option><option value="vectors">3D axes</option><option value="blank">Blank</option></select></label>
-            <label class="compact-field">Stamp<select id="stamp-kind"><option value="" disabled selected>Pick stamp</option><option value="integral">Integral ∫</option><option value="double">Double ∫∫</option><option value="triple">Triple ∫∫∫</option><option value="gradient">Gradient ∇</option><option value="infinity">Infinity ∞</option><option value="theta">Theta θ</option><option value="vector">Vector →</option></select></label>
+            <label class="compact-field stamp-picker">Stamp<select id="stamp-kind"><option value="" disabled selected>Pick stamp</option></select></label>
             <button id="stamp" type="button" aria-pressed="false">Place stamp</button>
           </div>
           <div id="scratch-pad" tabindex="0" role="group" aria-label="Drawing surface. Draw with finger, Pencil, or mouse. Keyboard: arrow keys move the cursor, Space starts or ends a line, Enter places the selected stamp, Escape cancels." aria-describedby="scratch-instructions">
-            <svg id="scratch-svg" viewBox="0 0 960 600" preserveAspectRatio="none" aria-hidden="true" focusable="false">
+            <svg id="scratch-svg" viewBox="0 0 960 800" preserveAspectRatio="none" aria-hidden="true" focusable="false">
               <defs><pattern id="scratch-grid" width="40" height="40" patternUnits="userSpaceOnUse"><path d="M40 0 H0 V40" class="scratch-grid-line"/></pattern></defs>
               <g id="scratch-guide-layer"></g><g id="scratch-ink-layer"></g>
-              <g id="scratch-cursor" hidden><circle cx="480" cy="300" r="12"/><path d="M460 300 H500 M480 280 V320"/></g>
+              <g id="scratch-cursor" hidden><circle cx="480" cy="400" r="12"/><path d="M460 400 H500 M480 380 V420"/></g>
             </svg>
             <span class="pad-hint">Your working goes here</span>
           </div>
           <div class="scratch-footer"><p id="scratch-status" class="small" role="status">Grid guide · ready to draw</p><div><button id="undo" class="quiet" type="button" disabled>Undo</button><button id="clear" class="quiet" type="button" disabled>Clear</button></div></div>
-          <details class="mini-details"><summary id="scratch-instructions">Drawing & keyboard controls</summary><p>Draw inside the pad; scroll normally outside it. Eraser removes whole strokes or stamps. Clear is undoable. Picking a stamp automatically selects Place stamp: just tap the pad next. Placement returns to the pen and resets the picker so you can pick the same stamp again. Place stamp repeats the last symbol (initially ∫). Keyboard: focus the pad, use arrows to move, Space to start/end a line, Enter to stamp, Escape to cancel. Shift + arrow moves farther. Work stays during this visit, but is not saved on reload.</p></details>
+          <details class="mini-details"><summary id="scratch-instructions">Drawing & keyboard controls</summary><p>Draw inside the larger pad; scroll normally outside it. Expand pad uses the full page width on larger screens without clearing your work. Eraser removes whole strokes or stamps. Clear is undoable. Pick a symbol or common-rule formula to activate Place stamp, then tap the pad. Formula stamps stay inside the edges and contain general rules, not solved examples. Placement returns to the pen and resets the picker so you can pick the same stamp again. Place stamp repeats the last stamp (initially ∫). Keyboard: focus the pad, use arrows to move, Space to start/end a line, Enter to stamp, Escape to cancel. Shift + arrow moves farther. Work stays during this visit, but is not saved on reload.</p></details>
         </section>
         <section id="graph-panel" class="panel helper" aria-labelledby="graph-heading" hidden>
           <div class="section-top"><h3 id="graph-heading">Graph lab</h3><span class="tag">Explore, not solve</span></div>

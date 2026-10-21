@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { COURSES, generateProblem, answerValue } from "../exercises.js";
 import { fraction, fractionText, fractionValue, seededRandom, GRAPHS, graphPoint, graphIntegral, SPECIAL_ANGLES, unitCircle, pretty, dot } from "../math.js";
-import { distanceToSegment, segmentDistance } from "../scratch.js";
+import { distanceToSegment, segmentDistance, segmentHitsRect, STAMPS } from "../scratch.js";
 
 function close(actual, expected, tolerance = 1e-6) {
   assert.ok(Math.abs(actual - expected) <= tolerance * Math.max(1, Math.abs(expected)), `${actual} should equal ${expected}`);
@@ -19,6 +19,10 @@ function checkMath(problem) {
   const v = problem.parameters, answer = answerValue(problem);
   const { a, b, c, n, x, y, z } = v;
   switch (problem.family) {
+    case "power":
+      for (const at of [-1.2, 0.5, 2]) close(answer.coefficient * at ** answer.exponent, derivative(x => a * x ** n, at));
+      assert.equal(answer.coefficient, a * n); assert.equal(answer.exponent, n - 1);
+      break;
     case "difference":
     case "continuity":
       close(answer, ((a + 0.001) ** 2 - a ** 2) / 0.001, 0.001);
@@ -86,7 +90,7 @@ function symbolicEquivalent(choice, correct, problem) {
   if (!model) return false;
   if (Array.isArray(model)) return JSON.stringify(model) === JSON.stringify(answer);
   if (problem.family === "antiderivative") return model.constant === true && model.exponent === answer.exponent && fractionValue(model.coefficient) === fractionValue(answer.coefficient);
-  if (["chain", "substitution"].includes(problem.family)) return model.exponent === answer.exponent && (typeof model.coefficient === "number" ? model.coefficient : fractionValue(model.coefficient)) === (typeof answer.coefficient === "number" ? answer.coefficient : fractionValue(answer.coefficient));
+  if (["power", "chain", "substitution"].includes(problem.family)) return model.exponent === answer.exponent && (typeof model.coefficient === "number" ? model.coefficient : fractionValue(model.coefficient)) === (typeof answer.coefficient === "number" ? answer.coefficient : fractionValue(answer.coefficient));
   if (problem.family === "parts") return model.linear === answer.linear && model.constant === answer.constant;
   return model.divergent === answer.divergent;
 }
@@ -146,6 +150,7 @@ test("Every exercise family names its applicable rule, with important conditions
   const expected = {
     difference: "Difference of squares & limit laws",
     continuity: "Continuity at a point",
+    power: "Power, sum & constant-multiple rules",
     chain: "Chain rule",
     minimum: "Fermat’s theorem & the second-derivative test",
     "power-integral": "Fundamental Theorem of Calculus",
@@ -191,6 +196,57 @@ test("Every exercise family names its applicable rule, with important conditions
   assert.match(statements.get(expected["improper-converges"]), /a > 0.*p > 1/);
   assert.match(statements.get(expected.polar), /tracing the region once.*radians/);
   assert.match(statements.get(expected.double), /continuous function.*rectangle or box/);
+});
+
+test("Power-rule-only practice covers all 126 monomials without composite functions", () => {
+  for (const sign of [-1, 1]) for (let coefficient = 1; coefficient <= 9; coefficient++) for (let exponent = 2; exponent <= 8; exponent++) {
+    const draws = [sign < 0 ? 0 : 0.75, (coefficient - 0.5) / 9, (exponent - 1.5) / 7];
+    let index = 0;
+    const problem = generateProblem("1", "power-rule", () => draws[index++] ?? 0.5);
+    assert.deepEqual(problem.parameters, { a: sign * coefficient, n: exponent });
+    assert.equal(problem.family, "power");
+    assert.equal(problem.rules.length, 1);
+    assert.doesNotMatch(problem.rules[0].name, /chain|product|quotient/i);
+    assert.match(problem.expression, /^f\(x\) = [−-]?\d*x[²³⁴⁵⁶⁷⁸]$/);
+    assert.equal(new Set(problem.choices.map(choice => JSON.stringify(choice.model))).size, 4);
+    checkMath(problem);
+  }
+});
+
+test("Tips are general rule references, invariant across parameter values and without worked steps", () => {
+  const byFamily = new Map();
+  for (const course of COURSES) for (const [topic] of course.topics) for (let seed = 0; seed < 100; seed++) {
+    const problem = generateProblem(course.id, topic, seededRandom(seed));
+    assert.ok(problem.tips.length > 0);
+    for (const tip of problem.tips) {
+      assert.deepEqual(Object.keys(tip).sort(), ["name", "statement"]);
+      assert.ok(problem.rules.some(rule => rule.name === tip.name));
+      assert.ok(tip.statement.length > 40);
+      assert.ok(!problem.steps.includes(tip.statement));
+      assert.doesNotMatch(tip.statement, /the answer is|therefore|this exercise|here the quadratic|ln\(R\) grows/i);
+    }
+    if (byFamily.has(problem.family)) assert.deepEqual(problem.tips, byFamily.get(problem.family));
+    else byFamily.set(problem.family, problem.tips);
+  }
+  assert.equal(byFamily.size, 25);
+  assert.match(byFamily.get("power")[0].statement, /nxⁿ⁻¹/);
+  assert.match(byFamily.get("chain").map(tip => tip.statement).join(" "), /g′\(x\)/);
+});
+
+test("Common-rule stamps contain general formulas and their conditions", () => {
+  for (const stamp of Object.values(STAMPS)) assert.ok(stamp.label && stamp.lines.every(line => line.length > 0));
+  assert.match(STAMPS["rule-chain"].lines.join(" "), /f′\(g\(x\)\) · g′\(x\).*differentiable/);
+  assert.match(STAMPS["rule-power"].lines.join(" "), /an xⁿ⁻¹.*n ≥ 1/);
+  assert.match(STAMPS["rule-product"].lines.join(" "), /u′v \+ uv′/);
+  assert.match(STAMPS["rule-quotient"].lines.join(" "), /u′v − uv′.*v ≠ 0/);
+  assert.match(STAMPS["rule-integral"].lines.join(" "), /\+ C.*n ≠ −1/);
+  assert.match(STAMPS["rule-parts"].lines.join(" "), /uv − ∫ v du/);
+  assert.match(STAMPS["rule-ftc"].lines.join(" "), /F\(b\) − F\(a\).*continuous/);
+  const box = { x: 10, y: 20, width: 400, height: 100 };
+  assert.equal(segmentHitsRect({ x: 0, y: 60 }, { x: 500, y: 60 }, box, 0), true);
+  assert.equal(segmentHitsRect({ x: 410, y: 80 }, { x: 410, y: 80 }, box, 0), true);
+  assert.equal(segmentHitsRect({ x: 15, y: 18 }, { x: 15, y: 18 }, box, 3), true);
+  assert.equal(segmentHitsRect({ x: 0, y: 0 }, { x: 500, y: 0 }, box, 3), false);
 });
 
 test("Cross-product distractors are distinct over the entire 3,072-input parameter space", () => {

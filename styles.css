@@ -105,7 +105,10 @@ h3 { font-size: 17px; line-height: 1.35; }
 .field select { width: 100%; font-weight: 400; font-size: 15px; }
 .coverage-note { display: flex; align-items: start; gap: 8px; font-size: 12px; color: var(--cp-text-muted); }
 .status-dot { width: 7px; height: 7px; margin-top: 6px; background: var(--cp-success); border-radius: 50%; }
-.workspace { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); gap: 24px; align-items: start; }
+.workspace { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr); gap: 24px; align-items: start; }
+.workspace.pad-expanded { grid-template-columns: minmax(0, 1fr); }
+.workspace.pad-expanded .practice { max-width: 800px; width: 100%; }
+#scratch-expand { font-size: 13px; }
 .practice { padding: 24px; min-width: 0; }
 .section-top { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; }
 .tag { display: inline-block; background: var(--cp-accent-soft); color: var(--cp-accent); font-size: 11px; letter-spacing: 0.2px; padding: 5px 9px; border-radius: 6px; font-weight: 650; }
@@ -149,9 +152,10 @@ details summary { cursor: pointer; min-height: 44px; padding: 12px 0; font-size:
 .solution li + li { margin-top: 8px; }
 .solution-rules { border-bottom: 1px solid var(--cp-border); margin-bottom: 16px; overflow-wrap: anywhere; }
 .solution h3 { font-size: 14px; }
-.solution-rules dl { margin: 12px 0 16px; font-size: 14px; line-height: 1.6; }
-.solution-rules dt { font-weight: 650; color: var(--cp-accent); }
-.solution-rules dd { margin: 4px 0 12px; }
+.rule-list { margin: 12px 0 16px; font-size: 14px; line-height: 1.6; overflow-wrap: anywhere; }
+.rule-list dt { font-weight: 650; color: var(--cp-accent); }
+.rule-list dd { margin: 4px 0 12px; }
+.tips { margin-bottom: 16px; padding: 0 12px; border: 1px solid var(--cp-border); border-radius: 10px; background: var(--cp-accent-soft); }
 .solution-steps-heading { margin-bottom: 8px; }
 .question-actions { display: flex; justify-content: space-between; gap: 12px; margin-top: 24px; }
 .preservation-note { padding-top: 16px; font-size: 12px; }
@@ -168,7 +172,9 @@ details summary { cursor: pointer; min-height: 44px; padding: 12px 0; font-size:
 .compact-field { display: flex; flex-direction: column; gap: 3px; font-size: 11px; color: var(--cp-text-muted); }
 .compact-field select { font-size: 13px; color: var(--cp-text); padding-left: 8px; padding-right: 24px; }
 .guide-tools { padding-top: 12px; border-top: 1px solid var(--cp-border); }
-#scratch-pad { position: relative; width: 100%; aspect-ratio: 8 / 5; border: 1px solid var(--cp-border-strong); border-radius: 10px; background: var(--cp-bg-elevated); overflow: hidden; touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; cursor: crosshair; }
+.stamp-picker { min-width: 0; flex: 1; }
+.stamp-picker select { width: 100%; }
+#scratch-pad { position: relative; width: 100%; aspect-ratio: 6 / 5; border: 1px solid var(--cp-border-strong); border-radius: 10px; background: var(--cp-bg-elevated); overflow: hidden; touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; cursor: crosshair; }
 #scratch-svg { display: block; width: 100%; height: 100%; }
 #scratch-pad svg, #scratch-pad svg * { pointer-events: none; }
 .scratch-grid-line { fill: none; stroke: var(--cp-grid); stroke-width: 1.5; }
@@ -246,6 +252,7 @@ footer { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 12
 }
 @media (max-width: 760px) {
   .workspace { grid-template-columns: 1fr; gap: 24px; }
+  #scratch-expand { display: none; }
   .intro { gap: 20px; }
   .intro h2 { font-size: 30px; }
   .session-card { min-width: 0; padding-left: 20px; }
