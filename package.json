@@ -3,9 +3,13 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "description": "Dependency-free, touch-friendly calculus practice",
+  "description": "Touch-friendly calculus practice with locally bundled math typesetting",
   "scripts": {
     "test": "node --test tests/math.test.js",
-    "test:browser": "node tests/browser-check.mjs"
+    "test:browser": "node tests/browser-check.mjs",
+    "vendor:mathjax": "node scripts/vendor-mathjax.mjs"
+  },
+  "devDependencies": {
+    "mathjax": "3.2.2"
   }
 }

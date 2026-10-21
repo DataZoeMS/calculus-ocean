@@ -1,3 +1,6 @@
+import { STAMP_TEX } from "./math-content.js";
+import { mathSvg } from "./math-render.js";
+
 const NS = "http://www.w3.org/2000/svg";
 const WIDTH = 960, HEIGHT = 800;
 export const STAMPS = {
@@ -52,17 +55,21 @@ export function segmentHitsRect(start, end, rect, radius) {
 }
 
 function stampNode(mark) {
-  const text = svgNode("text", { transform: `translate(${mark.x} ${mark.y})`, class: `scratch-stamp stamp-${mark.ink}` });
-  text.style.fontSize = `${mark.fontSize}px`;
-  if (mark.lines.length === 1) text.textContent = mark.lines[0];
-  else mark.lines.forEach((line, index) => text.append(svgNode("tspan", { x: 0, y: index * mark.fontSize * 1.35 }, line)));
-  return text;
+  const group = svgNode("g", { transform: `translate(${mark.x} ${mark.y})`, class: `scratch-stamp stamp-${mark.ink}`, "data-stamp": mark.id, "aria-label": mark.lines.join(". ") });
+  const svg = mark.svg.cloneNode(true);
+  svg.setAttribute("width", mark.width);
+  svg.setAttribute("height", mark.height);
+  svg.setAttribute("x", -mark.width / 2);
+  svg.setAttribute("y", -mark.height / 2);
+  group.append(svg);
+  return group;
 }
 
 export function createScratchPad() {
   const $ = id => document.getElementById(id);
   const surface = $("scratch-pad"), inkLayer = $("scratch-ink-layer"), guideLayer = $("scratch-guide-layer");
   let marks = [], history = [], active = null, mode = "pen", cursor = { x: WIDTH / 2, y: HEIGHT / 2 }, keyboardStroke = null, selectedStamp = "integral";
+  const stampCache = new Map();
 
   for (const [name, isRule] of [["Symbols", false], ["Common rules", true]]) {
     const group = document.createElement("optgroup");
@@ -125,21 +132,16 @@ export function createScratchPad() {
   }
   function addStamp(point) {
     const definition = STAMPS[selectedStamp];
-    const mark = { type: "stamp", ...point, lines: definition.lines, ink: $("ink").value, fontSize: definition.lines.length > 1 ? 40 : 52 };
-    const node = stampNode(mark);
-    inkLayer.append(node);
-    let bounds = node.getBBox();
-    if (bounds.width > WIDTH - 32) {
-      mark.fontSize *= (WIDTH - 32) / bounds.width;
-      node.remove();
-      const fitted = stampNode(mark);
-      inkLayer.append(fitted);
-      bounds = fitted.getBBox();
-      fitted.remove();
-    } else node.remove();
-    mark.bounds = { x: bounds.x, y: bounds.y, width: bounds.width, height: bounds.height };
-    mark.x = Math.max(16 - bounds.x, Math.min(WIDTH - 16 - bounds.x - bounds.width, point.x));
-    mark.y = Math.max(16 - bounds.y, Math.min(HEIGHT - 16 - bounds.y - bounds.height, point.y));
+    if (!stampCache.has(selectedStamp)) stampCache.set(selectedStamp, mathSvg(STAMP_TEX[selectedStamp]));
+    const svg = stampCache.get(selectedStamp);
+    const viewBox = svg.viewBox.baseVal;
+    // MathJax's path coordinates use 1,000 units per em; size once, then clone while drawing.
+    const scale = Math.min((definition.lines.length > 1 ? 38 : 52) / 1000, (WIDTH - 32) / viewBox.width, (HEIGHT - 32) / viewBox.height);
+    const width = viewBox.width * scale, height = viewBox.height * scale;
+    const mark = { type: "stamp", id: selectedStamp, ...point, lines: definition.lines, ink: $("ink").value, svg, width, height };
+    mark.bounds = { x: -width / 2, y: -height / 2, width, height };
+    mark.x = Math.max(16 + width / 2, Math.min(WIDTH - 16 - width / 2, point.x));
+    mark.y = Math.max(16 + height / 2, Math.min(HEIGHT - 16 - height / 2, point.y));
     remember([...marks]);
     marks = [...marks, mark];
     render();

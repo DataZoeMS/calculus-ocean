@@ -306,9 +306,9 @@ const generators = {
         prompt: "Does the improper integral converge? If so, to what value?", expression: `∫ from ${lower} to ∞ of 1/x dx`,
         note: "A shrinking integrand alone does not guarantee finite area.",
         choices: symbolic({ text: "Diverges to +∞", model: { divergent: true } }, [
-          { text: "Converges to 0", reason: "The limit of the integrand is not the value of the integral." },
-          { text: `Converges to ${ft(F(1, lower))}`, reason: "The p-integral rule for p > 1 cannot be applied at p = 1." },
-          { text: `Converges to ${lower + 1}`, reason: "Use an upper-limit limit, not a finite endpoint substitution." }
+          { text: "Converges to 0", value: F(0), reason: "The limit of the integrand is not the value of the integral." },
+          { text: `Converges to ${ft(F(1, lower))}`, value: F(1, lower), reason: "The p-integral rule for p > 1 cannot be applied at p = 1." },
+          { text: `Converges to ${lower + 1}`, value: F(lower + 1), reason: "Use an upper-limit limit, not a finite endpoint substitution." }
         ]),
         steps: [`Replace ∞ by R: ∫ from ${lower} to R of 1/x dx = ln(R) − ln(${lower}).`, "As R → ∞, ln(R) grows without bound.", "Therefore the improper integral diverges to +∞."]
       };

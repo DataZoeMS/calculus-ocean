@@ -1,9 +1,11 @@
 import { COURSES, generateProblem } from "./exercises.js";
 import { createScratchPad } from "./scratch.js";
 import { createGraph, createUnitCircle } from "./helpers.js";
+import { problemMath, RULE_MATH } from "./math-content.js";
+import { initializeMath, renderMath, renderMathLines } from "./math-render.js";
 
 const $ = id => document.getElementById(id);
-let problem, solved = false, answered = 0, correct = 0, questionNumber = 0;
+let problem, presentation, solved = false, answered = 0, correct = 0, questionNumber = 0;
 let previousSignature = "";
 
 function showError(error) {
@@ -25,7 +27,13 @@ function renderRules(target, rules) {
   target.replaceChildren();
   for (const rule of rules) {
     const name = document.createElement("dt"), statement = document.createElement("dd");
-    name.textContent = rule.name; statement.textContent = rule.statement;
+    const content = RULE_MATH[rule.name];
+    if (!content) throw new Error(`Missing rule formatting: ${rule.name}`);
+    name.textContent = rule.name;
+    const formulas = document.createElement("div"), explanation = document.createElement("p");
+    renderMathLines(formulas, content.tex, rule.statement);
+    explanation.textContent = content.text;
+    statement.append(formulas, explanation);
     target.append(name, statement);
   }
 }
@@ -38,14 +46,16 @@ function nextQuestion(moveFocus = false) {
     if (signature !== previousSignature) { previousSignature = signature; break; }
   }
   problem = next;
+  presentation = problemMath(problem);
   solved = false;
   questionNumber++;
   $("question-topic").textContent = `Calculus ${["I", "II", "III"][Number(problem.course) - 1]} / ${problem.topicName}`;
   $("question-number").textContent = `Dive ${String(questionNumber).padStart(2, "0")}`;
   $("question-heading").textContent = problem.prompt;
-  $("question-expression").textContent = problem.expression;
+  renderMath($("question-expression"), presentation.expression, problem.expression);
   $("question-note").textContent = problem.note || "Choose one exact answer, then compare your reasoning with the worked steps.";
   $("answers").replaceChildren();
+  $("answers").classList.toggle("wide-answers", problem.family === "improper-diverges");
   problem.choices.forEach((choice, index) => {
     const button = document.createElement("button");
     button.type = "button";
@@ -53,7 +63,8 @@ function nextQuestion(moveFocus = false) {
     button.dataset.index = index;
     const letter = document.createElement("span"), copy = document.createElement("span"), formula = document.createElement("span");
     letter.className = "letter"; letter.textContent = "ABCD"[index]; letter.setAttribute("aria-hidden", "true");
-    copy.className = "answer-copy"; formula.className = "formula"; formula.textContent = choice.text;
+    copy.className = "answer-copy"; formula.className = "formula";
+    renderMath(formula, presentation.choices[index], choice.text);
     copy.append(formula); button.append(letter, copy);
     button.setAttribute("aria-label", `Answer ${"ABCD"[index]}: ${choice.text}`);
     button.addEventListener("click", () => answer(index));
@@ -93,18 +104,32 @@ function showSolution(selected = null) {
     }
   }
   renderRules($("solution-rules"), problem.rules);
-  for (const step of problem.steps) {
+  for (const [index, step] of presentation.worked.entries()) {
     const li = document.createElement("li");
-    li.textContent = step; $("solution-steps").append(li);
+    const instruction = document.createElement("p");
+    instruction.textContent = step.text;
+    li.append(instruction);
+    if (step.tex.length) {
+      const formulas = document.createElement("div");
+      renderMathLines(formulas, step.tex, problem.steps[index]);
+      li.append(formulas);
+    }
+    $("solution-steps").append(li);
   }
   $("solution").hidden = false;
   $("solution").open = true;
 }
 
-function feedback(title, body, state) {
+function feedback(title, body, state, includeAnswer = false) {
   const heading = document.createElement("strong"), copy = document.createElement("span");
   heading.textContent = title; copy.textContent = body;
   $("feedback").replaceChildren(heading, copy);
+  if (includeAnswer) {
+    const answerFormula = document.createElement("div");
+    answerFormula.className = "feedback-formula";
+    renderMath(answerFormula, presentation.choices[problem.answer], `Correct answer: ${problem.choices[problem.answer].text}`);
+    $("feedback").append(answerFormula);
+  }
   $("feedback").dataset.state = state;
 }
 
@@ -116,7 +141,7 @@ function answer(index) {
   $("score").replaceChildren(document.createTextNode(`${correct} correct `));
   const span = document.createElement("span"); span.textContent = `/ ${answered} answered`; $("score").append(span);
   showSolution(index);
-  feedback(right ? "Nicely reasoned." : "A useful place to learn.", right ? "That’s the correct answer. Follow the worked steps below to check your method." : `${problem.choices[index].reason} The correct answer is ${problem.choices[problem.answer].text}.`, right ? "correct" : "incorrect");
+  feedback(right ? "Nicely reasoned." : "A useful place to learn.", right ? "That’s the correct answer. Follow the worked steps below to check your method." : `${problem.choices[index].reason} The correct answer is:`, right ? "correct" : "incorrect", !right);
 }
 
 function createTimer() {
@@ -152,6 +177,7 @@ function themeButton() {
 }
 
 try {
+  await initializeMath();
   if (!["light", "dark"].includes(document.documentElement.dataset.theme)) {
     document.documentElement.dataset.theme = matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
   }
@@ -163,7 +189,7 @@ try {
   $("reveal").addEventListener("click", () => {
     if (solved) return;
     showSolution();
-    feedback("Study mode · answer revealed", `The answer is ${problem.choices[problem.answer].text}. Read the worked steps, then try a fresh question. This reveal does not count toward your score.`, "study");
+    feedback("Study mode · answer revealed", "Read the worked steps, then try a fresh question. This reveal does not count toward your score. The answer is:", "study", true);
   });
   for (const button of document.querySelectorAll("[data-panel]")) {
     button.addEventListener("click", () => {

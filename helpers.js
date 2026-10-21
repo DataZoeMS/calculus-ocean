@@ -1,4 +1,6 @@
 import { GRAPHS, SPECIAL_ANGLES, graphPoint, graphIntegral, unitCircle, pretty } from "./math.js";
+import { exactValueTex } from "./math-content.js";
+import { renderMath } from "./math-render.js";
 
 const NS = "http://www.w3.org/2000/svg";
 const $ = id => document.getElementById(id);
@@ -6,6 +8,14 @@ const set = (id, name, value) => $(id).setAttribute(name, String(value));
 const sx = x => 40 + (x + 5) * 42;
 const sy = y => 320 - (Math.max(-10000, Math.min(10000, y)) + 5) * 30;
 const pair = (x, y) => `${sx(x).toFixed(2)} ${sy(y).toFixed(2)}`;
+const GRAPH_TEX = { quadratic: "ax^2", cubic: "ax^3", sine: "a\\sin x", cosine: "a\\cos x", exponential: "ae^x", logarithm: "a\\ln x", reciprocal: "\\frac{a}{x}" };
+
+function readoutText(target, text) {
+  target.replaceChildren(document.createTextNode(text));
+  target.removeAttribute("role");
+  target.removeAttribute("aria-label");
+  delete target.dataset.tex;
+}
 
 function makeSvg(name, attributes, text) {
   const element = document.createElementNS(NS, name);
@@ -31,6 +41,7 @@ export function createGraph() {
     $("graph-x-value").textContent = pretty(x);
     $("graph-a").setAttribute("aria-valuetext", String(a));
     $("graph-x").setAttribute("aria-valuetext", String(x));
+    renderMath($("graph-formula"), `y=${GRAPH_TEX[kind]},\\qquad a=${pretty(a)}`, `${GRAPHS[kind].formula}; a = ${pretty(a)}`);
     let d = "", connected = false, previousX = null;
     for (let i = 0; i <= 600; i++) {
       const px = -5 + i / 60, point = graphPoint(kind, a, px);
@@ -46,10 +57,10 @@ export function createGraph() {
       set("graph-tangent", "d", showTangent ? `M${pair(-5, point.y + point.slope * (-5 - x))} L${pair(5, point.y + point.slope * (5 - x))}` : "");
       set("graph-point", "cx", sx(x)); set("graph-point", "cy", sy(point.y));
       $("graph-point").style.display = showTangent ? "" : "none";
-      $("graph-tangent-readout").textContent = `f(${pretty(x)}) ≈ ${pretty(point.y)}; slope f′(${pretty(x)}) ≈ ${pretty(point.slope)}.`;
+      renderMath($("graph-tangent-readout"), String.raw`\begin{aligned}f(${pretty(x)})&\approx${pretty(point.y)}\\f'(${pretty(x)})&\approx${pretty(point.slope)}\end{aligned}`, `f(${pretty(x)}) ≈ ${pretty(point.y)}; slope f′(${pretty(x)}) ≈ ${pretty(point.slope)}.`);
     } else {
       set("graph-tangent", "d", ""); $("graph-point").style.display = "none";
-      $("graph-tangent-readout").textContent = "The function and tangent are undefined at this x. Choose a point inside the function’s domain.";
+      readoutText($("graph-tangent-readout"), "The function and tangent are undefined at this x. Choose a point inside the function’s domain.");
     }
     const leftInput = $("graph-left"), rightInput = $("graph-right");
     const left = leftInput.valueAsNumber, right = rightInput.valueAsNumber;
@@ -66,11 +77,13 @@ export function createGraph() {
       areaPath += `L${pair(right, 0)} Z`;
     }
     set("graph-area", "d", areaPath);
-    $("graph-area-readout").textContent = !inWindow
+    const areaLabel = !inWindow
       ? "Enter both bounds between −5 and 5."
       : area === null
         ? "No finite integral is shown: this interval touches or crosses an excluded point. ln(x) requires positive bounds; 1/x must stay on one side of 0."
         : `∫ from ${pretty(left)} to ${pretty(right)} of f(x) dx ≈ ${pretty(area)}${right < left ? " (reversed bounds change the sign)" : ""}.`;
+    if (area !== null) renderMath($("graph-area-readout"), String.raw`\int_{${pretty(left)}}^{${pretty(right)}}f(x)\,dx\approx${pretty(area)}`, areaLabel);
+    else readoutText($("graph-area-readout"), areaLabel);
     $("graph-title").textContent = `${GRAPHS[kind].formula}, a = ${pretty(a)}`;
     $("graph-description").textContent = `Window: x and y from −5 to 5. ${$("graph-tangent-readout").textContent} ${$("graph-area-readout").textContent}`;
   }
@@ -106,9 +119,14 @@ export function createUnitCircle() {
       ["tan θ", result.tangent === null ? "undefined" : `${equal} ${result.exact?.[3] ?? pretty(result.tangent)}`]
     ];
     $("circle-readout").replaceChildren();
-    for (const [label, value] of values) {
-      const row = document.createElement("p"), caption = document.createElement("span");
-      caption.textContent = label; row.append(caption, document.createTextNode(value));
+    for (const [exactIndex, [label, value]] of values.entries()) {
+      const row = document.createElement("div"), caption = document.createElement("span"), formula = document.createElement("div");
+      caption.className = "readout-label";
+      caption.textContent = label;
+      const raw = result.exact?.[exactIndex] ?? [result.radians, result.x, result.y, result.tangent][exactIndex];
+      const tex = raw === "undefined" || raw === null ? "\\text{undefined}" : `${result.exact ? "=" : "\\approx"}${result.exact ? exactValueTex(raw) : pretty(raw)}`;
+      renderMath(formula, tex, value);
+      row.append(caption, formula);
       $("circle-readout").append(row);
     }
     $("circle-title").textContent = `Unit circle at ${degrees} degrees`;

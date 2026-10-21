@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { COURSES, generateProblem, answerValue } from "../exercises.js";
 import { fraction, fractionText, fractionValue, seededRandom, GRAPHS, graphPoint, graphIntegral, SPECIAL_ANGLES, unitCircle, pretty, dot } from "../math.js";
 import { distanceToSegment, segmentDistance, segmentHitsRect, STAMPS } from "../scratch.js";
+import { problemMath, RULE_MATH, STAMP_TEX, fracTex, exactValueTex } from "../math-content.js";
 
 function close(actual, expected, tolerance = 1e-6) {
   assert.ok(Math.abs(actual - expected) <= tolerance * Math.max(1, Math.abs(expected)), `${actual} should equal ${expected}`);
@@ -16,6 +17,17 @@ function integrate(f, left, right, n = 400) {
 }
 
 function checkMath(problem) {
+  const formatted = problemMath(problem);
+  assert.equal(new Set(formatted.choices).size, 4, "typeset choices must also remain distinct");
+  assert.equal(formatted.worked.length, problem.steps.length);
+  for (const tex of [formatted.expression, ...formatted.choices, ...formatted.worked.flatMap(step => step.tex)]) {
+    assert.equal(typeof tex, "string");
+    assert.doesNotMatch(tex, /undefined|NaN/);
+    assert.ok(tex.length > 0);
+  }
+  for (const rule of [...problem.rules, ...problem.tips]) {
+    assert.ok(RULE_MATH[rule.name]?.tex.length, `Missing formatted reference: ${rule.name}`);
+  }
   const v = problem.parameters, answer = answerValue(problem);
   const { a, b, c, n, x, y, z } = v;
   switch (problem.family) {
@@ -84,6 +96,30 @@ function checkMath(problem) {
     default: assert.fail(`Untested family ${problem.family}`);
   }
 }
+
+test("Typeset fractions, radicals, signs and constant-of-integration choices retain exact meaning", () => {
+  assert.equal(fracTex(0, 5), "0");
+  assert.equal(fracTex(-6, 8), "-\\frac{3}{4}");
+  assert.equal(fracTex(6, -3), "-2");
+  assert.equal(exactValueTex("−√3/3"), "-\\frac{\\sqrt{3}}{3}");
+  assert.equal(exactValueTex("11π/6"), "\\frac{11\\pi}{6}");
+  assert.equal(exactValueTex("undefined"), "\\text{undefined}");
+  assert.throws(() => exactValueTex("\\input{remote}"), /Unsupported exact/);
+  for (const angle of SPECIAL_ANGLES) for (const value of unitCircle(angle).exact) assert.ok(exactValueTex(value));
+  assert.deepEqual(Object.keys(STAMP_TEX).sort(), Object.keys(STAMPS).sort());
+  for (let seed = 1; seed <= 100; seed++) {
+    const problem = generateProblem("1", "antiderivatives", seededRandom(seed));
+    const content = problemMath(problem);
+    problem.choices.forEach((choice, index) => assert.equal(content.choices[index].endsWith("+C"), choice.model.constant));
+    for (const topic of ["power-rule", "limits", "definite"]) {
+      const example = generateProblem("1", topic, seededRandom(seed));
+      const math = problemMath(example);
+      example.choices.forEach((choice, index) => {
+        if (choice.value) assert.equal(math.choices[index], fracTex(choice.value));
+      });
+    }
+  }
+});
 
 function symbolicEquivalent(choice, correct, problem) {
   const model = choice.model, answer = correct.model;

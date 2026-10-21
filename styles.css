@@ -128,6 +128,18 @@ h3 { font-size: 17px; line-height: 1.35; }
 .bubble-three { width: 28px; height: 28px; top: 61px; right: 7%; }
 #question-heading { font-size: 20px; margin-bottom: 14px; line-height: 1.45; }
 .formula { font-family: "Cambria Math", Cambria, Georgia, "Times New Roman", serif; font-variant-numeric: lining-nums; }
+.math-source { display: none; }
+.typeset { min-width: 0; line-height: 1.6; }
+.typeset > svg { display: inline-block; max-width: 100%; height: auto; vertical-align: middle !important; }
+.math-line { margin: 12px 0; font-size: 20px; }
+.feedback-formula { margin-top: 16px; font-size: 24px; }
+.question-formula.typeset { text-align: center; padding: 24px 16px; }
+.answer .typeset { font-size: 23px; width: 100%; }
+.answers.wide-answers { grid-template-columns: 1fr; }
+.rule-list .math-line { font-size: 19px; }
+.rule-list dd > p { margin-top: 12px; }
+.solution li > p { margin-bottom: 12px; }
+.solution li { padding-bottom: 8px; }
 .question-formula { font-size: clamp(20px, 2.2vw, 26px); line-height: 1.8; padding: 16px; background: var(--cp-bg-elevated); border: 1px solid var(--cp-border); border-radius: 10px; overflow-wrap: anywhere; white-space: pre-line; }
 .question-note { margin: 10px 0 18px; min-height: 20px; }
 .answers { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
@@ -185,10 +197,9 @@ details summary { cursor: pointer; min-height: 44px; padding: 12px 0; font-size:
 .ink-accent { stroke: var(--cp-accent); }
 .ink-text { stroke: var(--cp-text); }
 .ink-coral { stroke: var(--cp-coral); }
-.stamp-accent { fill: var(--cp-accent); }
-.stamp-text { fill: var(--cp-text); }
-.stamp-coral { fill: var(--cp-coral); }
-.scratch-stamp { font: 52px "Cambria Math", Cambria, Georgia, serif; dominant-baseline: middle; text-anchor: middle; }
+.stamp-accent { fill: var(--cp-accent); color: var(--cp-accent); }
+.stamp-text { fill: var(--cp-text); color: var(--cp-text); }
+.stamp-coral { fill: var(--cp-coral); color: var(--cp-coral); }
 #scratch-cursor { fill: none; stroke: var(--cp-coral); stroke-width: 2; }
 .pad-hint { position: absolute; left: 0; right: 0; top: 46%; text-align: center; pointer-events: none; font: italic 16px Georgia, serif; color: var(--cp-text-soft); }
 #scratch-pad.has-marks .pad-hint { display: none; }
@@ -220,8 +231,9 @@ details summary { cursor: pointer; min-height: 44px; padding: 12px 0; font-size:
 #circle-projection { fill: none; stroke: var(--cp-coral); stroke-width: 2; stroke-dasharray: 5 4; }
 #circle-arc { fill: none; stroke: var(--cp-coral); stroke-width: 2; }
 .circle-readout { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 16px; }
-.circle-readout p { padding: 10px; background: var(--cp-bg-elevated); border-radius: 8px; font-size: 14px; }
-.circle-readout span { display: block; color: var(--cp-text-muted); font-size: 11px; margin-bottom: 3px; }
+.circle-readout > div { padding: 12px; background: var(--cp-bg-elevated); border-radius: 8px; font-size: 22px; }
+.circle-readout .readout-label { display: block; color: var(--cp-text-muted); font-size: 12px; margin-bottom: 10px; }
+.math-readout.typeset { font-size: 21px; padding: 12px; }
 .field-guide { display: grid; grid-template-columns: 1.25fr 1fr; gap: 0 36px; padding: 28px; margin: 28px 0; }
 .field-guide > div { grid-row: span 2; }
 .field-guide h2 { margin: 8px 0 12px; font-size: 22px; }

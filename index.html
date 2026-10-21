@@ -169,6 +169,7 @@
         <section id="graph-panel" class="panel helper" aria-labelledby="graph-heading" hidden>
           <div class="section-top"><h3 id="graph-heading">Graph lab</h3><span class="tag">Explore, not solve</span></div>
           <label class="field">Function<select id="graph-kind"></select></label>
+          <div id="graph-formula" class="math-readout"></div>
           <div class="range-row"><label for="graph-a">Scale a</label><input id="graph-a" type="range" min="-3" max="3" step="0.25" value="1"><output id="graph-a-value" for="graph-a">1</output></div>
           <svg id="graph-svg" class="graph-svg" viewBox="0 0 480 360" role="img" aria-labelledby="graph-title graph-description">
             <title id="graph-title">Quadratic graph</title><desc id="graph-description">Axes from minus five to five, with tangent and signed area explorations.</desc>
@@ -204,7 +205,7 @@
     <section id="field-guide" class="field-guide panel">
       <div><p class="eyebrow">A field guide for your next dive</p><h2>Practice deliberately, explore freely.</h2><p>Choose a course and a focus, or mix its topics. Try a question, sketch your reasoning, then compare the worked steps. Studying a solution does not count as an answered question. The timer is entirely yours to control.</p></div>
       <details id="coverage"><summary>What’s in this ocean?</summary><div id="coverage-list"></div><p class="small">A first-release collection of representative, parameterized exercises—not a complete syllabus or symbolic algebra system. No general limit engine, convergence test suite, arbitrary-region integration, surface integrals, or Stokes/divergence theorem problems. All choices are exact unless explicitly labeled otherwise. Reloading starts a fresh session.</p></details>
-      <details><summary>Privacy, access & notation</summary><p>No accounts, analytics, external fonts, or third-party scripts. Practice, drawings, and scores stay in this page’s memory. Standard GitHub Pages hosting still receives normal web requests. Formulas use selectable Unicode text, superscripts, explicit bounds, and exp(x) for eˣ. Controls work with keyboard and touch. Light/dark modes follow your device initially; the theme button changes this visit’s appearance.</p></details>
+      <details><summary>Privacy, access & notation</summary><p>No accounts, analytics, or externally hosted scripts or fonts. MathJax is bundled locally to display textbook-style formulas and crisp vector stamps, with text labels for assistive technology. Practice, drawings, and scores stay in this page’s memory. Standard GitHub Pages hosting still receives normal web requests. Controls work with keyboard and touch. Light/dark modes follow your device initially; the theme button changes this visit’s appearance.</p></details>
     </section>
   </main>
   <footer><span>Calculus Ocean</span><span>Built for curiosity, not a countdown.</span><a href="https://github.com/DataZoeMS/calculus-ocean" target="_blank" rel="noopener noreferrer">Source & documentation ↗</a></footer>

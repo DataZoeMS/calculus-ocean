@@ -5,8 +5,9 @@ touch-friendly practice space for Calculus I, II, and III. An illustrated whale,
 four readable answer cards, worked solutions, and a persistent-in-session scratch
 pad keep the spirit of Whale Math, with tools for more advanced study.
 
-No accounts, backend, analytics, external fonts, runtime dependencies, or build
-step. All runtime assets are local to this repository.
+No accounts, backend, analytics, external fonts, or required build step.
+All runtime assets, including the MathJax formula renderer, are bundled locally
+in this repository. Nothing loads from a third-party CDN.
 
 ## Practice coverage
 
@@ -95,8 +96,8 @@ Select an integral, double/triple integral, gradient, infinity, theta, or vector
 stamp, or a **common-rule formula stamp**: power, chain, product, quotient,
 integral power, integration by parts, or Fundamental Theorem of Calculus.
 Formula stamps include the rule name, general formula, and essential conditions;
-they are references, not solved examples. Their text fits inside the pad even
-when placed near an edge. Erasing any part of a rule's text box removes the
+they are references, not solved examples. Their scalable SVG formulas fit inside
+the pad even when placed near an edge. Erasing any part of a rule's bounding box removes the
 whole stamp, and Undo restores it.
 
 **Place stamp activates automatically**, so tap a location next without
@@ -145,11 +146,17 @@ rounded to three decimals. Tangent is explicitly undefined at 90° and 270°.
 ## Accessibility and privacy
 
 Native buttons, selects, disclosure controls, keyboard support, visible focus,
-44px-or-larger controls, selectable mathematical text, descriptive SVG labels,
-and live answer feedback are included. Formula notation uses Unicode symbols,
-superscripts, and explicit integral bounds rather than relying on an external
-math renderer. Actual screen-reader pronunciation of math varies by platform.
-Touch and narrow layouts are supported without disabling browser zoom.
+44px-or-larger controls, descriptive SVG labels, and live answer feedback are
+included. Questions, answer cards, tips, worked solutions, helper readouts, and
+stamps use locally bundled **MathJax**: stacked fractions, radicals, properly
+placed exponents and integral/series bounds, and aligned working.
+
+Formulas retain plain-text accessibility labels, while decorative glyph paths
+are hidden from assistive technology to avoid duplicate announcements. Native
+dropdown options and short inline notation remain plain text. These are labelled
+SVG formulas, not a full screen-reader math-navigation interface, and glyphs are
+not selectable text. Actual screen-reader pronunciation varies by platform.
+Touch and narrow layouts remain supported without disabling browser zoom.
 
 Practice history, drawings, timer state, theme changes, and helper settings
 remain **only in the current page's memory**. Reloading or closing the tab
@@ -169,6 +176,25 @@ Then visit `http://127.0.0.1:8766/`. ES modules require HTTP rather than
 double-clicking `index.html` with a `file:` URL. There is no install/build
 requirement to run the site.
 
+### Updating the bundled math renderer
+
+MathJax **3.2.2** is pinned in `package-lock.json`. Its combined TeX/SVG component
+contains the glyphs needed here, avoiding remote fonts or dynamic font chunks.
+The checked-in files are `vendor/mathjax/tex-svg.js` and its Apache-2.0 `LICENSE`.
+To reproduce these vendor files with Node and npm:
+
+```powershell
+npm ci --ignore-scripts
+npm run vendor:mathjax
+```
+
+This is a maintainer operation, not a requirement for using or hosting the site.
+The runtime disables automatic page typesetting, the context menu, and TeX
+autoload/require. All formulas come from explicit, structured templates; there
+is no user-entered TeX or expression evaluation. SVG stamps are self-contained
+and cached by stamp type rather than re-typeset during drawing. Loading or
+typesetting errors produce the page's visible error message.
+
 ## Validation
 
 ```powershell
@@ -187,6 +213,9 @@ including the different rules used by the alternate problem families.
 All 126 power-only coefficient/exponent combinations are checked independently.
 Tips are verified to be general, parameter-independent references, and rule
 stamps are checked for their formulas, conditions, and eraser hit geometry.
+The same generated cases also check presentation coverage and distinct typeset
+choices. Additional cases cover exact fraction signs, radical/angle formatting,
+and preservation of the constant-of-integration distractor.
 
 Optional browser regression checks use an **existing Playwright installation**
 with its WebKit browser. No browser dependencies are needed by the deployed app.
@@ -211,6 +240,10 @@ from pen/eraser modes, repeat selection, and placement with touch and keyboard.
 Additional checks verify non-revealing tips, the larger pad's measured dimensions,
 full-width expansion without losing work, all seven common-rule stamps,
 edge-clamped placement, and whole-stamp erasing/undo.
+It typesets over 1,000 unique formulas covering all 25 exercise families,
+references, stamps, and special angles, checks self-contained SVG output with
+no external requests, and exercises the visible error when the local renderer
+cannot load.
 
 WebKit iPad emulation includes actual touch taps, local touch-event prevention,
 pointer-captured drags outside and back into the pad, and viewport rotation.
@@ -222,9 +255,13 @@ This is **not physical-iPad/Apple-Pencil testing**.
 - `exercises.js`: course catalog, parameterized generators, worked steps,
   exact choices and distractor explanations.
 - `math.js`: rational arithmetic, seeded randomness, graph and unit-circle math.
+- `math-content.js`: explicit TeX presentation of typed problem data and rules.
+- `math-render.js`, `vendor/mathjax/`: local MathJax startup, labelled SVG output,
+  and the checked-in renderer and license.
 - `app.js`: question flow, score, manual timer, panel toggles, and theme.
 - `scratch.js`, `helpers.js`: isolated scratch, graph, and unit-circle behavior.
 - `tests/`: math and optional WebKit browser regressions.
 
-GitHub Pages serves the repository root from `main`. Commit the static files;
-there is no bundler, deployment secret, or generated asset step.
+GitHub Pages serves the repository root from `main`. Commit the static files,
+including the vendored renderer; there is no bundler, deployment secret, or
+deployment-time asset generation.
