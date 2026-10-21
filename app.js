@@ -54,6 +54,7 @@ function nextQuestion(moveFocus = false) {
   $("feedback").removeAttribute("data-state");
   $("solution").hidden = true;
   $("solution").open = false;
+  $("solution-rules").replaceChildren();
   $("solution-steps").replaceChildren();
   $("reveal").disabled = false;
   $("next").textContent = "Next question →";
@@ -79,6 +80,11 @@ function showSolution(selected = null) {
       button.querySelector(".answer-copy").append(state);
       button.setAttribute("aria-label", `${button.getAttribute("aria-label")}. ${state.textContent}`);
     }
+  }
+  for (const rule of problem.rules) {
+    const name = document.createElement("dt"), statement = document.createElement("dd");
+    name.textContent = rule.name; statement.textContent = rule.statement;
+    $("solution-rules").append(name, statement);
   }
   for (const step of problem.steps) {
     const li = document.createElement("li");

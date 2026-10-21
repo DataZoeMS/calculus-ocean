@@ -123,7 +123,11 @@
         <p id="question-note" class="question-note"></p>
         <div id="answers" class="answers" role="group" aria-label="Answer choices"></div>
         <div id="feedback" class="feedback" role="status" aria-live="polite" aria-atomic="true"></div>
-        <details id="solution" class="solution" hidden><summary>Worked solution</summary><ol id="solution-steps"></ol></details>
+        <details id="solution" class="solution" hidden>
+          <summary>Worked solution</summary>
+          <section class="solution-rules" aria-labelledby="solution-rules-heading"><h3 id="solution-rules-heading">Theorems &amp; rules used</h3><dl id="solution-rules"></dl></section>
+          <h3 class="solution-steps-heading">Apply them step by step</h3><ol id="solution-steps"></ol>
+        </details>
         <div class="question-actions"><button id="reveal" class="quiet" type="button">Study the solution</button><button id="next" class="primary" type="button">Next question <span aria-hidden="true">→</span></button></div>
         <p class="small preservation-note">Your scratch work and helpers stay put when questions change.</p>
       </section>
@@ -143,7 +147,7 @@
           </div>
           <div class="scratch-toolbar guide-tools">
             <label class="compact-field">Guide<select id="scratch-guide"><option value="grid">Grid</option><option value="axes">x–y axes</option><option value="circle">Unit circle</option><option value="vectors">3D axes</option><option value="blank">Blank</option></select></label>
-            <label class="compact-field">Stamp<select id="stamp-kind"><option value="integral">Integral ∫</option><option value="double">Double ∫∫</option><option value="triple">Triple ∫∫∫</option><option value="gradient">Gradient ∇</option><option value="infinity">Infinity ∞</option><option value="theta">Theta θ</option><option value="vector">Vector →</option></select></label>
+            <label class="compact-field">Stamp<select id="stamp-kind"><option value="" disabled selected>Pick stamp</option><option value="integral">Integral ∫</option><option value="double">Double ∫∫</option><option value="triple">Triple ∫∫∫</option><option value="gradient">Gradient ∇</option><option value="infinity">Infinity ∞</option><option value="theta">Theta θ</option><option value="vector">Vector →</option></select></label>
             <button id="stamp" type="button" aria-pressed="false">Place stamp</button>
           </div>
           <div id="scratch-pad" tabindex="0" role="group" aria-label="Drawing surface. Draw with finger, Pencil, or mouse. Keyboard: arrow keys move the cursor, Space starts or ends a line, Enter places the selected stamp, Escape cancels." aria-describedby="scratch-instructions">
@@ -155,7 +159,7 @@
             <span class="pad-hint">Your working goes here</span>
           </div>
           <div class="scratch-footer"><p id="scratch-status" class="small" role="status">Grid guide · ready to draw</p><div><button id="undo" class="quiet" type="button" disabled>Undo</button><button id="clear" class="quiet" type="button" disabled>Clear</button></div></div>
-          <details class="mini-details"><summary id="scratch-instructions">Drawing & keyboard controls</summary><p>Draw inside the pad; scroll normally outside it. Eraser removes whole strokes or stamps. Clear is undoable. Choose Place stamp, then tap the pad. Keyboard: focus the pad, use arrows to move, Space to start/end a line, Enter to stamp, Escape to cancel. Shift + arrow moves farther. Work stays during this visit, but is not saved on reload.</p></details>
+          <details class="mini-details"><summary id="scratch-instructions">Drawing & keyboard controls</summary><p>Draw inside the pad; scroll normally outside it. Eraser removes whole strokes or stamps. Clear is undoable. Picking a stamp automatically selects Place stamp: just tap the pad next. Placement returns to the pen and resets the picker so you can pick the same stamp again. Place stamp repeats the last symbol (initially ∫). Keyboard: focus the pad, use arrows to move, Space to start/end a line, Enter to stamp, Escape to cancel. Shift + arrow moves farther. Work stays during this visit, but is not saved on reload.</p></details>
         </section>
         <section id="graph-panel" class="panel helper" aria-labelledby="graph-heading" hidden>
           <div class="section-top"><h3 id="graph-heading">Graph lab</h3><span class="tag">Explore, not solve</span></div>

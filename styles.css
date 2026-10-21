@@ -147,6 +147,12 @@ details summary { cursor: pointer; min-height: 44px; padding: 12px 0; font-size:
 .solution { margin-top: 12px; padding: 0 16px; border: 1px solid var(--cp-border); border-radius: 10px; background: var(--cp-bg-elevated); }
 .solution ol { padding-left: 20px; margin: 0 0 16px; font-size: 15px; line-height: 1.7; }
 .solution li + li { margin-top: 8px; }
+.solution-rules { border-bottom: 1px solid var(--cp-border); margin-bottom: 16px; overflow-wrap: anywhere; }
+.solution h3 { font-size: 14px; }
+.solution-rules dl { margin: 12px 0 16px; font-size: 14px; line-height: 1.6; }
+.solution-rules dt { font-weight: 650; color: var(--cp-accent); }
+.solution-rules dd { margin: 4px 0 12px; }
+.solution-steps-heading { margin-bottom: 8px; }
 .question-actions { display: flex; justify-content: space-between; gap: 12px; margin-top: 24px; }
 .preservation-note { padding-top: 16px; font-size: 12px; }
 .toolkit { min-width: 0; }

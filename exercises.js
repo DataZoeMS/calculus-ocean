@@ -15,6 +15,136 @@ export const COURSES = [
   ] }
 ];
 
+const RULES = {
+  factoring: {
+    name: "Difference of squares & limit laws",
+    statement: "x² − a² = (x − a)(x + a). For x ≠ a, cancel x − a. Functions that agree near a, except possibly at a, have the same limit there."
+  },
+  continuity: {
+    name: "Continuity at a point",
+    statement: "A function is continuous at a when its finite limit as x → a equals its value at a. Polynomials are continuous, so their limits can be found by substitution. Fill a removable hole with that limit."
+  },
+  derivative: {
+    name: "Power, sum & constant-multiple rules",
+    statement: "For an integer n ≥ 1, d(xⁿ)/dx = nxⁿ⁻¹. Differentiate sums term by term and keep constant multipliers. The derivative of a constant is 0."
+  },
+  chain: {
+    name: "Chain rule",
+    statement: "For differentiable f and g, d[f(g(x))]/dx = f′(g(x)) · g′(x). Multiply the outer derivative by the inner derivative."
+  },
+  minimum: {
+    name: "Fermat’s theorem & the second-derivative test",
+    statement: "At an interior local extremum where f is differentiable, f′ = 0. If f′(c) = 0 and f″(c) > 0 for a twice continuously differentiable function, c is a local minimum. Here the quadratic opens upward everywhere, so its vertex is the unique absolute minimum."
+  },
+  integral: {
+    name: "Power rule for integration",
+    statement: "∫ xⁿ dx = xⁿ⁺¹/(n + 1) + C for n ≠ −1, on an interval where the power is defined. Keep constant multipliers. C represents the full family of antiderivatives."
+  },
+  fundamental: {
+    name: "Fundamental Theorem of Calculus",
+    statement: "If f is continuous on [a, b] and F′ = f, then ∫ from a to b of f(x) dx = F(b) − F(a). Subtract the lower endpoint from the upper endpoint."
+  },
+  sine: {
+    name: "Derivative of sine",
+    statement: "d[sin(x)]/dx = cos(x) when x is in radians; cos(0) = 1. For sin(g(x)), also apply the chain rule."
+  },
+  exponential: {
+    name: "Exponential derivative & antiderivative",
+    statement: "d[exp(x)]/dx = exp(x), ∫ exp(x) dx = exp(x) + C, and exp(0) = 1. Here exp(x) means eˣ."
+  },
+  substitution: {
+    name: "Substitution rule (reverse chain rule)",
+    statement: "For continuous f and continuously differentiable g, set u = g(x), so du = g′(x) dx. Then ∫ f(g(x))g′(x) dx = ∫ f(u) du. Substitute g(x) back after integrating."
+  },
+  parts: {
+    name: "Integration by parts (reverse product rule)",
+    statement: "For continuously differentiable u and v, ∫ u dv = uv − ∫ v du. Choose u and dv so that the remaining integral is simpler; include + C for the general antiderivative."
+  },
+  improper: {
+    name: "Improper integral as a limit & the p-integral test",
+    statement: "For a > 0, ∫ from a to ∞ of x⁻ᵖ dx means the limit of the integral from a to R as R → ∞. It converges exactly when p > 1. A finite limit, not merely an integrand tending to zero, is required."
+  },
+  logarithm: {
+    name: "Logarithmic antiderivative",
+    statement: "∫ (1/x) dx = ln|x| + C on any interval excluding 0. For positive x this is ln(x) + C, and ln(R) grows without bound as R → ∞."
+  },
+  geometric: {
+    name: "Infinite geometric series formula",
+    statement: "For |r| < 1, Σ from n = 0 to ∞ of arⁿ = a/(1 − r). The n = 0 term is a; preserve the sign of r."
+  },
+  ratio: {
+    name: "Ratio test & radius of convergence",
+    statement: "For eventually nonzero terms, let L = lim |aₙ₊₁/aₙ|. L < 1 gives absolute convergence; L > 1 gives divergence; L = 1 is inconclusive. Solve for |x − c| < R to find the radius, and check endpoints separately. At x = c in this exercise, every term is 0, so convergence is immediate."
+  },
+  parametric: {
+    name: "Parametric derivative rule",
+    statement: "For differentiable x(t) and y(t), dy/dx = (dy/dt)/(dx/dt) wherever dx/dt ≠ 0. Differentiate both coordinates with respect to t before dividing."
+  },
+  polar: {
+    name: "Polar area formula",
+    statement: "For a continuous nonnegative radius r(θ) tracing the region once over α ≤ θ ≤ β, area = (1/2) ∫ from α to β of [r(θ)]² dθ. Angles must be in radians."
+  },
+  dot: {
+    name: "Dot-product formula",
+    statement: "a · b = a₁b₁ + a₂b₂ + a₃b₃. Multiply matching coordinates and add; the result is a scalar."
+  },
+  cross: {
+    name: "Cross-product formula & right-hand rule",
+    statement: "a × b = ⟨a₂b₃ − a₃b₂, a₃b₁ − a₁b₃, a₁b₂ − a₂b₁⟩. The result is perpendicular to both vectors. Order matters: b × a = −(a × b)."
+  },
+  partial: {
+    name: "Partial differentiation",
+    statement: "Differentiate with respect to the requested variable while holding all other independent variables constant. Apply the usual one-variable derivative rules."
+  },
+  directional: {
+    name: "Gradient formula for directional derivatives",
+    statement: "For differentiable f, Dᵤf = ∇f · u, where ∇f = ⟨∂f/∂x, ∂f/∂y⟩ and u is a unit vector. For a nonzero direction v, first set u = v/|v|."
+  },
+  fubini: {
+    name: "Fubini’s theorem",
+    statement: "A continuous function on a closed rectangle or box can be integrated one variable at a time in either order (or any order in 3D). Hold the other variables constant during each integration. The polynomial integrands here meet this condition."
+  },
+  mass: {
+    name: "Mass from a density function",
+    statement: "For an integrable nonnegative density ρ over a solid E, mass = ∭ over E of ρ dV. Integrate the varying density rather than treating it as constant."
+  },
+  divergence: {
+    name: "Divergence definition",
+    statement: "For a differentiable vector field F = ⟨P, Q, R⟩, ∇ · F = ∂P/∂x + ∂Q/∂y + ∂R/∂z. Divergence is a scalar; pair each component with its matching coordinate."
+  },
+  curl: {
+    name: "Curl definition",
+    statement: "For a differentiable vector field F = ⟨P, Q, R⟩, ∇ × F = ⟨∂R/∂y − ∂Q/∂z, ∂P/∂z − ∂R/∂x, ∂Q/∂x − ∂P/∂y⟩. Curl is a vector; keep the cross-product order and signs."
+  }
+};
+
+const SOLUTION_RULES = {
+  difference: [RULES.factoring, RULES.continuity],
+  continuity: [RULES.factoring, RULES.continuity],
+  chain: [RULES.derivative, RULES.chain],
+  minimum: [RULES.derivative, RULES.minimum],
+  "power-integral": [RULES.integral, RULES.fundamental],
+  antiderivative: [RULES.integral],
+  sine: [RULES.sine, RULES.chain, RULES.derivative],
+  exponential: [RULES.exponential, RULES.chain, RULES.derivative],
+  substitution: [RULES.substitution, RULES.integral],
+  parts: [RULES.parts, RULES.exponential],
+  "improper-diverges": [RULES.improper, RULES.logarithm, RULES.fundamental],
+  "improper-converges": [RULES.improper, RULES.integral, RULES.fundamental],
+  geometric: [RULES.geometric],
+  radius: [RULES.ratio],
+  parametric: [RULES.parametric, RULES.derivative],
+  polar: [RULES.polar, RULES.fundamental],
+  dot: [RULES.dot],
+  cross: [RULES.cross],
+  partial: [RULES.partial, RULES.derivative],
+  directional: [RULES.directional, RULES.partial, RULES.derivative],
+  double: [RULES.fubini, RULES.integral, RULES.fundamental],
+  triple: [RULES.mass, RULES.fubini, RULES.integral, RULES.fundamental],
+  divergence: [RULES.divergence, RULES.partial, RULES.derivative],
+  curl: [RULES.curl, RULES.partial, RULES.derivative]
+};
+
 function numeric(correct, wrong) {
   const answer = typeof correct === "number" ? F(correct) : correct;
   const key = ft(answer);
@@ -315,8 +445,10 @@ export function generateProblem(courseId, topicId, random = Math.random) {
   const definition = course.topics.find(([id]) => id === topic);
   if (!definition || !generators[topic]) throw new RangeError("Topic does not belong to this course.");
   const problem = generators[topic](random);
+  const rules = SOLUTION_RULES[problem.family];
+  if (!rules?.length) throw new Error(`Missing solution rules for ${problem.family}.`);
   problem.choices = shuffle(random, problem.choices);
-  return { ...problem, course: course.id, topic, topicName: definition[1], answer: problem.choices.findIndex(choice => choice.correct) };
+  return { ...problem, rules, course: course.id, topic, topicName: definition[1], answer: problem.choices.findIndex(choice => choice.correct) };
 }
 
 export function answerValue(problem) {

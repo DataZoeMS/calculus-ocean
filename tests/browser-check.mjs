@@ -61,6 +61,9 @@ try {
       await page.locator(".answer").first().click();
       assert.equal(await page.locator("#solution").getAttribute("open"), "");
       assert.ok(await page.locator("#solution-steps li").count() >= 3);
+      assert.ok(await page.locator("#solution-rules dt").count() >= 1);
+      assert.equal(await page.locator("#solution-rules dt").count(), await page.locator("#solution-rules dd").count());
+      assert.ok((await page.locator("#solution-rules").textContent()).length > 40);
       assert.equal(await page.locator(".answer:disabled").count(), 4);
       assert.equal(await page.locator(".answer.correct").count(), 1);
       assert.ok((await page.locator("#feedback").textContent()).length > 30);
@@ -87,9 +90,19 @@ try {
   await page.locator("#reveal").click();
   assert.equal(await page.locator("#score").textContent(), scoreBeforeReveal);
   assert.match(await page.locator("#feedback").textContent(), /Study mode/);
+  assert.match(await page.locator("#solution-rules").textContent(), /Difference of squares/);
+  await page.locator("#topic").selectOption("derivatives");
+  assert.equal(await page.locator("#solution-rules dt").count(), 0);
+  await page.locator("#reveal").click();
+  const derivativeRules = await page.locator("#solution-rules").textContent();
+  assert.match(derivativeRules, /Power, sum & constant-multiple rules/);
+  assert.match(derivativeRules, /Chain rule/);
+  assert.doesNotMatch(derivativeRules, /Difference of squares/);
+  if (output) await page.locator("#solution").screenshot({ path: join(output, "solution-rules.png") });
   await page.locator("#next").click();
   assert.equal(await page.locator("#question-heading").evaluate(el => document.activeElement === el), true);
   assert.equal(await page.locator("#solution").isVisible(), false);
+  assert.equal(await page.locator("#solution-rules dt").count(), 0);
   assert.equal(await page.locator(".answer:not(:disabled)").count(), 4);
 
   const pad = page.locator("#scratch-pad");
@@ -119,9 +132,26 @@ try {
   assert.equal(await page.locator("#scratch-ink-layer path").count(), 0);
   await page.locator("#undo").click();
   assert.equal(await page.locator("#scratch-ink-layer").innerHTML(), drawing);
+  for (const [kind, symbol] of [["integral", "∫"], ["double", "∫∫"], ["triple", "∫∫∫"], ["gradient", "∇"], ["infinity", "∞"], ["theta", "θ"], ["theta", "θ"], ["vector", "→"]]) {
+    await page.locator(kind === "theta" ? "#eraser" : "#pen").click();
+    await page.locator("#stamp-kind").selectOption(kind);
+    assert.equal(await page.locator("#stamp").getAttribute("aria-pressed"), "true");
+    assert.equal(await page.locator("#pen").getAttribute("aria-pressed"), "false");
+    assert.equal(await page.locator("#eraser").getAttribute("aria-pressed"), "false");
+    assert.match(await page.locator("#scratch-status").textContent(), /Tap the pad to place/);
+    assert.equal(await page.locator("#scratch-ink-layer").innerHTML(), drawing);
+    await pad.click({ position: { x: 50, y: 50 } });
+    assert.equal(await page.locator("#scratch-ink-layer text").textContent(), symbol);
+    assert.equal(await page.locator("#scratch-ink-layer path").count(), 1);
+    assert.equal(await page.locator("#pen").getAttribute("aria-pressed"), "true");
+    assert.equal(await page.locator("#stamp-kind").inputValue(), "");
+    await page.locator("#undo").click();
+    assert.equal(await page.locator("#scratch-ink-layer").innerHTML(), drawing);
+  }
   await page.locator("#stamp").click();
   await pad.click({ position: { x: 50, y: 50 } });
   assert.equal(await page.locator("#scratch-ink-layer text").count(), 1);
+  assert.equal(await page.locator("#scratch-ink-layer text").textContent(), "→", "button repeats last stamp");
   await page.locator("#undo").click();
   assert.equal(await page.locator("#scratch-ink-layer text").count(), 0);
   await page.locator("#eraser").click();
@@ -135,8 +165,12 @@ try {
   await page.keyboard.press("ArrowDown");
   await page.keyboard.press("Space");
   assert.equal(await page.locator("#scratch-ink-layer path").count(), 2);
+  await page.locator("#stamp-kind").selectOption("theta");
+  await pad.focus();
   await page.keyboard.press("Enter");
   assert.equal(await page.locator("#scratch-ink-layer text").count(), 1);
+  assert.equal(await page.locator("#scratch-ink-layer text").textContent(), "θ");
+  assert.equal(await page.locator("#pen").getAttribute("aria-pressed"), "true");
   await page.keyboard.press("Space");
   await page.keyboard.press("ArrowRight");
   await page.keyboard.press("Escape");
@@ -196,6 +230,13 @@ try {
   const tabletPad = await tablet.locator("#scratch-pad").boundingBox();
   await tablet.touchscreen.tap(tabletPad.x + 50, tabletPad.y + 50);
   assert.equal(await tablet.locator("#scratch-ink-layer path").count(), 1, "real WebKit touch tap should draw");
+  await tablet.locator("#stamp-kind").selectOption("gradient");
+  assert.equal(await tablet.locator("#stamp").getAttribute("aria-pressed"), "true");
+  await tablet.locator("#scratch-pad").tap({ position: { x: 100, y: 50 } });
+  assert.equal(await tablet.locator("#scratch-ink-layer text").textContent(), "∇", "touch placement follows stamp selection without a mode-button tap");
+  assert.equal(await tablet.locator("#pen").getAttribute("aria-pressed"), "true");
+  await tablet.locator("#undo").tap();
+  assert.equal(await tablet.locator("#scratch-ink-layer text").count(), 0);
   const touchRules = await tablet.evaluate(() => {
     const pad = document.getElementById("scratch-pad");
     const insideStart = new TouchEvent("touchstart", { bubbles: true, cancelable: true });
@@ -205,10 +246,12 @@ try {
     return { start: insideStart.defaultPrevented, move: insideMove.defaultPrevented, outside: outside.defaultPrevented, touchAction: getComputedStyle(pad).touchAction, childPointerEvents: getComputedStyle(document.getElementById("scratch-svg")).pointerEvents, bodyOverflow: getComputedStyle(document.body).overflow };
   });
   assert.deepEqual(touchRules, { start: true, move: true, outside: false, touchAction: "none", childPointerEvents: "none", bodyOverflow: "visible" });
-  await tablet.mouse.move(tabletPad.x + 70, tabletPad.y + 80);
+  await tablet.locator("#scratch-pad").scrollIntoViewIfNeeded();
+  const dragPad = await tablet.locator("#scratch-pad").boundingBox();
+  await tablet.mouse.move(dragPad.x + 70, dragPad.y + 80);
   await tablet.mouse.down();
-  await tablet.mouse.move(tabletPad.x + tabletPad.width + 35, tabletPad.y + 100, { steps: 12 });
-  await tablet.mouse.move(tabletPad.x + 130, tabletPad.y + 120, { steps: 12 });
+  await tablet.mouse.move(dragPad.x + dragPad.width + 35, dragPad.y + 100, { steps: 12 });
+  await tablet.mouse.move(dragPad.x + 130, dragPad.y + 120, { steps: 12 });
   await tablet.mouse.up();
   assert.equal(await tablet.locator("#scratch-ink-layer path").count(), 2, "pointer capture should preserve a stroke across the boundary");
   const beforeRotation = await tablet.locator("#scratch-ink-layer").innerHTML();
@@ -223,6 +266,10 @@ try {
   if (output) await tablet.screenshot({ path: join(output, "ipad-dark-landscape.png"), fullPage: true });
   for (const width of [360, 390, 768, 820]) {
     await tablet.setViewportSize({ width, height: 1000 });
+    await tablet.locator("#course").selectOption("3");
+    await tablet.locator("#topic").selectOption("curl");
+    await tablet.locator("#reveal").tap();
+    assert.match(await tablet.locator("#solution-rules").textContent(), /Curl definition/);
     assert.ok(await tablet.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), `no horizontal overflow at ${width}px`);
     const undersized = await tablet.locator("button, select, input").evaluateAll(elements => elements.filter(el => {
       const rect = el.getBoundingClientRect();
@@ -237,7 +284,7 @@ try {
   assert.equal(await tablet.locator("#app-error").isVisible(), false);
   await ipad.close();
   assert.deepEqual(failures, []);
-  console.log(`PASS: 20 topics, answers/reveals, timer, graph domains, circle, scratch/undo/keyboard, WebKit iPad touch taps, capture, rotation, themes, 360–1440px layouts. Local test server: ${url} (stopped on exit).`);
+  console.log(`PASS: 20 topics, named solution rules, answers/reveals, timer, graph domains, circle, automatic/repeated stamp placement, scratch/undo/keyboard, WebKit iPad touch taps, capture, rotation, themes, 360–1440px layouts. Local test server: ${url} (stopped on exit).`);
 } finally {
   if (browser) await browser.close();
   await new Promise(resolve => server.close(resolve));

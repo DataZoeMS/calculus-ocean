@@ -103,6 +103,9 @@ for (const course of COURSES) {
         assert.equal(problem.choices.filter(c => c.correct).length, 1);
         assert.ok(problem.choices[problem.answer].correct);
         assert.ok(problem.steps.length >= 3);
+        assert.ok(problem.rules.length > 0);
+        assert.equal(new Set(problem.rules.map(rule => rule.name)).size, problem.rules.length);
+        assert.ok(problem.rules.every(rule => rule.name.length > 5 && rule.statement.length > 40));
         assert.ok(problem.choices.every(c => c.reason?.length > 10));
         assert.doesNotMatch(JSON.stringify(problem), /NaN|Infinity/);
         const checkFinite = value => {
@@ -137,6 +140,57 @@ test("All branches and all mixed-course topics are reachable; invalid selections
   assert.throws(() => generateProblem("4", "mixed"), RangeError);
   assert.throws(() => generateProblem("1", "curl"), RangeError);
   assert.throws(() => generateProblem("1", "nonexistent"), RangeError);
+});
+
+test("Every exercise family names its applicable rule, with important conditions retained", () => {
+  const expected = {
+    difference: "Difference of squares & limit laws",
+    continuity: "Continuity at a point",
+    chain: "Chain rule",
+    minimum: "Fermat’s theorem & the second-derivative test",
+    "power-integral": "Fundamental Theorem of Calculus",
+    antiderivative: "Power rule for integration",
+    sine: "Derivative of sine",
+    exponential: "Exponential derivative & antiderivative",
+    substitution: "Substitution rule (reverse chain rule)",
+    parts: "Integration by parts (reverse product rule)",
+    "improper-diverges": "Logarithmic antiderivative",
+    "improper-converges": "Improper integral as a limit & the p-integral test",
+    geometric: "Infinite geometric series formula",
+    radius: "Ratio test & radius of convergence",
+    parametric: "Parametric derivative rule",
+    polar: "Polar area formula",
+    dot: "Dot-product formula",
+    cross: "Cross-product formula & right-hand rule",
+    partial: "Partial differentiation",
+    directional: "Gradient formula for directional derivatives",
+    double: "Fubini’s theorem",
+    triple: "Mass from a density function",
+    divergence: "Divergence definition",
+    curl: "Curl definition"
+  };
+  const seen = new Set(), statements = new Map();
+  for (const course of COURSES) for (const [topic] of course.topics) for (let seed = 0; seed < 100; seed++) {
+    const problem = generateProblem(course.id, topic, seededRandom(seed));
+    assert.ok(problem.rules.some(rule => rule.name === expected[problem.family]), `Wrong rules for ${problem.family}`);
+    seen.add(problem.family);
+    for (const rule of problem.rules) statements.set(rule.name, rule.statement);
+    if (problem.family === "sine") assert.ok(!problem.rules.some(rule => rule.name.includes("Exponential")));
+    if (problem.family === "exponential") assert.ok(!problem.rules.some(rule => rule.name.includes("sine")));
+  }
+  assert.deepEqual([...seen].sort(), Object.keys(expected).sort());
+  assert.match(statements.get(expected.antiderivative), /n ≠ −1/);
+  assert.match(statements.get(expected.antiderivative), /\+ C/);
+  assert.match(statements.get(expected["power-integral"]), /continuous on \[a, b\]/);
+  assert.match(statements.get(expected.minimum), /local minimum.*quadratic.*absolute minimum/);
+  assert.match(statements.get(expected.geometric), /\|r\| < 1/);
+  assert.match(statements.get(expected.radius), /L = 1 is inconclusive/);
+  assert.match(statements.get(expected.radius), /endpoints separately/);
+  assert.match(statements.get(expected.parametric), /dx\/dt ≠ 0/);
+  assert.match(statements.get(expected.directional), /unit vector.*nonzero direction/);
+  assert.match(statements.get(expected["improper-converges"]), /a > 0.*p > 1/);
+  assert.match(statements.get(expected.polar), /tracing the region once.*radians/);
+  assert.match(statements.get(expected.double), /continuous function.*rectangle or box/);
 });
 
 test("Cross-product distractors are distinct over the entire 3,072-input parameter space", () => {

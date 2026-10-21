@@ -31,7 +31,7 @@ export function segmentDistance(a, b, c, d) {
 export function createScratchPad() {
   const $ = id => document.getElementById(id);
   const surface = $("scratch-pad"), inkLayer = $("scratch-ink-layer"), guideLayer = $("scratch-guide-layer");
-  let marks = [], history = [], active = null, mode = "pen", cursor = { x: 480, y: 300 }, keyboardStroke = null;
+  let marks = [], history = [], active = null, mode = "pen", cursor = { x: 480, y: 300 }, keyboardStroke = null, selectedStamp = "integral";
 
   const status = text => { $("scratch-status").textContent = text; };
   const remember = before => { history.push(before); if (history.length > 60) history.shift(); };
@@ -55,7 +55,8 @@ export function createScratchPad() {
   function setMode(next) {
     mode = next;
     for (const id of ["pen", "eraser", "stamp"]) $(id).setAttribute("aria-pressed", String(mode === id));
-    status(mode === "stamp" ? "Tap the pad to place one stamp" : `${mode === "pen" ? "Pen" : "Whole-stroke eraser"} selected`);
+    $("stamp-kind").value = mode === "stamp" ? selectedStamp : "";
+    status(mode === "stamp" ? `Tap the pad to place ${stamps[selectedStamp]}` : `${mode === "pen" ? "Pen" : "Whole-stroke eraser"} selected`);
   }
   function guide() {
     const kind = $("scratch-guide").value;
@@ -84,9 +85,10 @@ export function createScratchPad() {
   }
   function addStamp(point) {
     remember([...marks]);
-    marks = [...marks, { type: "stamp", ...point, text: stamps[$("stamp-kind").value], ink: $("ink").value }];
+    marks = [...marks, { type: "stamp", ...point, text: stamps[selectedStamp], ink: $("ink").value }];
     render();
-    status("Stamp placed · Undo available");
+    setMode("pen");
+    status("Stamp placed · Pen selected · Undo available");
   }
   function erase(point, previous = point) {
     const rect = surface.getBoundingClientRect();
@@ -129,7 +131,7 @@ export function createScratchPad() {
     endKeyboard();
     surface.focus({ preventScroll: true });
     const point = position(event);
-    if (mode === "stamp") { addStamp(point); setMode("pen"); return; }
+    if (mode === "stamp") { addStamp(point); return; }
     active = { pointerId: event.pointerId, before: [...marks], last: point };
     surface.setPointerCapture(event.pointerId);
     if (mode === "pen") marks = [...marks, makeStroke(point)];
@@ -158,6 +160,11 @@ export function createScratchPad() {
   surface.addEventListener("pointercancel", event => { if (active?.pointerId === event.pointerId) finish(true); });
   surface.addEventListener("lostpointercapture", event => { if (active?.pointerId === event.pointerId) finish(); });
   for (const id of ["pen", "eraser", "stamp"]) $(id).addEventListener("click", () => { finish(); endKeyboard(); setMode(id); });
+  $("stamp-kind").addEventListener("change", () => {
+    finish(); endKeyboard();
+    selectedStamp = $("stamp-kind").value;
+    setMode("stamp");
+  });
   $("scratch-guide").addEventListener("change", guide);
   $("undo").addEventListener("click", () => {
     finish(); endKeyboard();
